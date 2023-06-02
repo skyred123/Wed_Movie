@@ -1,0 +1,659 @@
+﻿@model Wed_Movie.DAO.PhanPhimDAO
+<style>
+    #container {
+        max-width: 1000px;
+        width: auto;
+        margin: 20px auto;
+    }
+
+    .ck-editor__editable[role="textbox"] {
+        /* editing area */
+        min-height: 500px;
+        max-height: 500px;
+        overflow: auto;
+        overflow-y: scroll;
+    }
+
+        .ck-editor__editable[role="textbox"]:focus {
+            height: auto;
+        }
+
+    #editorContainer img {
+        max-width: 100%;
+        max-height: 100%;
+    }
+
+    #upload-progress {
+        width: 100%;
+        height: 20px;
+    }
+
+    .video-wrapper {
+        position: relative;
+        width: 100%;
+        height: 0;
+        padding-bottom: 56.25%;
+    }
+
+        .video-wrapper video {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .video-wrapper .btn-icon {
+            margin: 8px;
+        }
+
+    .image-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+
+        .image-wrapper img {
+            /* CSS cho hình ảnh */
+        }
+
+        .image-wrapper .button-wrapper {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .image-wrapper:hover .button-wrapper {
+            opacity: 1;
+        }
+
+        .image-wrapper .button-wrapper button {
+            padding: 8px;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            color: #fff;
+            font-size: 16px;
+        }
+
+            .image-wrapper .button-wrapper button:hover {
+                background-color: rgba(0, 0, 0, 0.5);
+            }
+
+    
+
+</style>
+
+<div class="col-sm-2">
+    <button onclick="getModal('modal_Form')" type="button" class="my-3 p-2 btn btn-primary">Thêm Phần phim</button>
+</div>
+
+<div class="modal" id="modal_Form">
+    <div class="modal-overlay"></div>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="form_Titel"></h5>
+                <button onclick="closeModal('modal_Form')" type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                @*asp-action="AddPhanPhim" asp-controller="PhanPhim" asp-area="Admin" method="post"*@
+                <form id="formValid" enctype="multipart/form-data">
+                    <input asp-for="Id" type="hidden" id="Id" value="" />
+                    <div class="form-group my-2">
+                        <label for="Name">Tên phần phim:</label>
+                        <input asp-for="Name" type="text" class="form-control" />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+                    <div class="form-group my-2">
+                        <label for="Description">Nội Dung:</label>
+                        <input asp-for="Description" id="Description" name="Description" type="hidden" value="" />
+                        <div id="editorContainer" contenteditable="true" class="form-control " style="max-width:100%;min-height:0px;max-height:300px;overflow-y: scroll;"></div>
+                        <div class="d-flex justify-content-end my-1">
+                            <button id="btn_Description" onclick="getModal('modal_ckeditor')" type="button" class="btn btn-sm btn-primary" value=""> Nội Dung </button>
+                        </div>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+                    <div class="form-group my-2">
+                        <label for="PublicYear">Ngày đăng:</label>
+                        <input asp-for="PublicYear" type="date" class="form-control" />
+                        <span asp-validation-for="PublicYear" class="text-danger"></span>
+                    </div>
+                    <div class="form-group my-2">
+                        <label>Phim:</label><br />
+                        @Html.DropDownListFor(model => model.Phim, (SelectList)ViewBag.Phim, new { @class = "form-control" })
+                        <span asp-validation-for="Phim" class="text-danger"></span>
+                    </div>
+                    <div class="form-group my-2">
+                        <label>Diễn viên:</label><br />
+                        @Html.DropDownListFor(model => model.CT_DienVien, (SelectList)ViewBag.CT_DienVien, new { @class = "form-control",multiple="multiple" })
+                        <span asp-validation-for="CT_DienVien" class="text-danger"></span>
+                    </div>
+                    <div class="form-group my-2">
+                        <label for="Nationality">Hãng:</label><br />
+                        @Html.DropDownListFor(model => model.CT_Hangs,(SelectList)ViewBag.CT_Hangs,new { @class = "form-control" ,multiple="multiple"})
+                        <span asp-validation-for="CT_Hangs" class="text-danger"></span>
+                    </div>
+                    <div class="form-group my-2">
+                        <label for="Nationality">Thể Loại:</label><br />
+                        @Html.DropDownListFor(model => model.CT_TheLoais, (SelectList)ViewBag.CT_TheLoais,"Chọn thể loại", new { @class = "form-control",multiple="multiple" })
+                        <span asp-validation-for="CT_TheLoais" class="text-danger"></span>
+                    </div>
+                    <div class="form-group my-2">
+                        <label for="Image">Ảnh đại diện:</label>
+                        <div id="upload-image" class="position-relative text-center" style="border: 2px dashed #ccc; padding: 20px;height:100px;">
+                            <label class="btn btn-primary">Chọn tệp</label>
+                            <input asp-for="Image" type="file" class="form-control-file d-none" id="Image" name="Image" accept="image/*" />
+                            <img id="upload-img" class=" d-none position-absolute" style="max-width:100%;max-height:100%;top: 50%;left: 50%;transform: translate(-50%, -50%);" />
+                        </div>
+                    </div>
+                    <div class="form-group my-2">
+                        <label asp-for="Trailer" class="">Trailer:</label>
+                        <input asp-for="Trailer" type="file" class="form-control-file" id="Trailer" name="Trailer" accept="video/*" />
+                        <progress id="upload-progress" value="0" max="100"></progress>
+                    </div>
+                    <div class="modal-footer">
+                        <button onclick="closeModal('modal_Form')" type="button" class="btn btn-secondary close" data-bs-dismiss="modal">Đóng</button>
+                        <button id="btnSubmit" type="submit" class=" btn btn-primary ">Xác Nhận</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="modal_ckeditor">
+    <div class="modal-overlay"></div>
+    <div class="modal-dialog modal-dialog-centered model" style="max-width: 1080px;">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div id="container">
+                    <div id="editor" clas="editor">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer d-flex">
+                <button onclick="closeModal('modal_ckeditor')" class="btn btn-dark" style="max-width:100px;width:100px;">Thoát</button>
+                <button id="btn_ckeditor" class="btn btn-primary" style="max-width:100px;width:100px;">Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="modal_TapPhim">
+    <div class="modal-overlay"></div>
+    <div class="modal-dialog modal-dialog-centered model" style="max-width: 800px;">
+        <div id="partial_tapphim" class="modal-content">
+            
+        </div>
+    </div>
+</div>
+
+
+<div class="container">
+    <div class="row" id="list">
+    </div>
+</div>
+@section Scripts{
+    <script>
+        const request = new XMLHttpRequest();
+
+        $(document).ready(function () {
+            ListPhanPhim();
+        });
+        function GetPhanPhim(id){
+            return new Promise(function (resolve, reject){
+                $.ajax({
+                    url: '/Admin/PhanPhim/GetPhanPhim',
+                    type: 'get',
+                    data: {
+                        id: id,
+                    },
+                    success: function (data) {
+                        if (data.code == 200) {
+                            resolve(data.item)
+                        }
+                    },
+                    error: function (error) {
+                        reject(error);
+                    }
+                });
+            });
+        }
+
+        function ListPhanPhim() {
+            $.ajax({
+                url: '/Admin/PhanPhim/ListPhanPhim',
+                type: 'get',
+                dataType: 'json',
+                success: function (data) {
+                    if (data.code == 200) {
+                        $("#list").empty();
+                        $.each(data.listPhanPhim, function (k, v) {
+                            var str = '<div class="col-lg-3 col-md-4 col-sm-6 col-6 my-2">';
+                            str += '<div class="image-wrapper">';
+                            str += '<img id="' + v.id + '" name="ClickImage" class="img-fluid" src="' + window.location.origin + '/' + v.image + '" alt="Ảnh" />';
+                            str += '<div class="button-wrapper">'
+                            str += '<button onclick="ShowPhanPhim(\'' + v.id + '\')" type="button"><i class="fa fa-eye"></i></button>';
+                            str += '<button onclick="UpdatePhanPhim(\'' + v.id + '\')" type="button"><i class="fa fa-sync"></i></button>'
+                            str += '<button onclick="DeletePhanPhim(\'' + v.id + '\')" type="button"><i class="fa fa-trash" aria-hidden="true"></i></button>'
+                            str += '</div>'
+                            str += '</div>';
+                            str += '</div>';
+                            $("#list").append(str);
+                        });
+                    }
+                    else if (data.code == 500) {
+                        alert(data.msg);
+                    }
+                }
+            });
+        };
+
+        document.addEventListener('DOMContentLoaded', (event) => {
+
+            document.getElementById("formValid").addEventListener("submit", function (e) {
+                e.preventDefault(); // Cancel the default action
+
+                var formData = new FormData($(this)[0]);
+                if (formData.get("Id").length> 0) {
+                    $.ajax({
+                        url: '/Admin/PhanPhim/UpdatePhanPhim',
+                        type: 'put',
+                        dataType: 'json',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function (data) {
+                            if (data.code == 200) {
+                                alert(data.msg);
+                                ListPhanPhim();
+                            }
+                            else if (data.code == 500) {
+                                alert(data.msg);
+
+                            }
+                            resetModal();
+                            closeModal("modal_Form");
+                        },
+                        xhr: function () {
+                            var xhr = new window.XMLHttpRequest();
+                            //document.getElementById('modal_Form').prop('disabled', true);
+                            // Lắng nghe sự kiện progress
+                            xhr.upload.onprogress = function (e) {
+                                if (e.lengthComputable) {
+                                    var percent = (e.loaded / e.total) * 100;
+                                    // Cập nhật giá trị của thanh tiến trình
+                                    $('#upload-progress').val(percent);
+                                }
+                            };
+                            return xhr;
+                        },
+                    });
+                }
+                else{
+                    $.ajax({
+                        url: '/Admin/PhanPhim/AddPhanPhim',
+                        type: 'post',
+                        dataType: 'json',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        beforeSend: function () {
+                            // Khóa các phần tử HTML
+                            $('#modal_Form').prop('disabled', true);
+                        },
+                        success: function (data) {
+                            if (data.code == 200) {
+                                alert(data.msg);
+                                ListPhanPhim();
+                            }
+                            else if (data.code == 500) {
+                                alert(data.msg);
+
+                            }
+                            resetModal();
+                        },
+                        complete: function () {
+                            // Mở khóa các phần tử HTML
+                            $('#modal_Form').prop('disabled', false);
+                        },
+                        xhr: function () {
+                            var xhr = new window.XMLHttpRequest();
+                            //document.getElementById('modal_Form').prop('disabled', true);
+                            // Lắng nghe sự kiện progress
+                            xhr.upload.onprogress = function (e) {
+                                if (e.lengthComputable) {
+                                    var percent = (e.loaded / e.total) * 100;
+                                    // Cập nhật giá trị của thanh tiến trình
+                                    $('#upload-progress').val(percent);
+                                }
+                            };
+                            return xhr;
+                        },
+                    });
+                }
+            });
+        });
+
+        
+
+        function ShowPhanPhim(id){
+            $.get('/Admin/TapPhim/Index', { id: id }, function (data) {
+                // Đặt nội dung Partial View vào một phần tử trên trang
+                $('#partial_tapphim').html(data);
+            });
+            getModal("modal_TapPhim");
+        }
+
+        function UpdatePhanPhim(id){
+            GetPhanPhim(id).then(function (data) {
+                var form = document.getElementById('formValid');
+                form.elements['Id'].value = data.id;
+                form.elements['Name'].value = data.name;
+                form.elements['Description'].value = data.description;
+                document.getElementById("editorContainer").innerHTML = data.description;
+                form.elements['PublicYear'].value = data.publicYear.split("T")[0];
+                form.elements['Phim'].value = data.phim.id;
+                $("#CT_DienVien").val(data.cT_DienVien.map(function (item) { return item.idDienVien }));
+                $("#CT_Hangs").val(data.cT_Hangs.map(function (item) { return item.idHang }));
+                $("#CT_TheLoais").val(data.cT_TheLoais.map(function (item) { return item.idTheLoai }));
+                getModal("modal_Form");
+            })
+            .catch(function (error) {
+                console.error('Lỗi:', error);
+            });
+        }
+
+        function DeletePhanPhim(id){
+            $.ajax({
+                url: '/Admin/PhanPhim/DeletePhanPhim',
+                type: 'delete',
+                data: {
+                    id: id,
+                },
+                success: function (data) {
+                    if (data.code == 200) {
+                        alert(data.msg);
+                        ListPhanPhim();
+                    }
+                    else if (data.code == 500) {
+                        alert(data.msg);
+                    }
+                }
+            });
+        }
+
+        function resetModal() {
+            var list = [];
+            $("#CT_DienVien").val(list);
+            $("#CT_Hangs").val(list);
+            $("#CT_TheLoais").val(list);
+            document.getElementById("editorContainer").innerHTML = "";
+            var form = document.getElementById('formValid');
+
+            form.reset();
+            form.elements['Id'].value = "";
+
+
+            $('#upload-progress').val(0);
+            document.getElementById("upload-img").src = "";
+
+        }
+
+        function closeModal(name_modal) {
+            var modal = document.getElementById(name_modal);
+            if (name_modal == "modal_TapPhim") {
+                var video = document.getElementById("modal-video");
+                video.pause();
+                document.getElementById("name_TapPhim").innerText = "";
+                document.getElementById("name_modal_footer").innerText = "Giới Thiệu Về ";
+                document.getElementById("description_TapPhim").innerHTML ="";
+                $("#dienvien_TapPhim").empty();
+                $("#hang_TapPhim").empty();
+                $("#theloai_TapPhim").empty();
+
+                request.abort();
+
+
+                modal.style.display = "none";
+                document.body.classList.remove("modal-open");
+            }
+            else if (name_modal = "modal_Form") {
+                modal.style.display = "none";
+                document.body.classList.remove("modal-open");
+                document.getElementById("upload-image").getElementsByTagName('label')[0].classList.remove("d-none");
+                resetModal();
+            } else if (name_modal == "modal_ckeditor") {
+                $('#modal_Form').show();
+                modal.style.display = "none";
+                document.body.classList.remove("modal-open");
+            }
+
+        }
+
+        function getModal(name_modal) {
+            var modal = document.getElementById(name_modal);
+            if (name_modal == "modal_TapPhim") {
+
+                modal.style.display = "block";
+                document.body.classList.add("modal-open");
+            }
+            else if (name_modal = "modal_Form") {
+                modal.style.display = "block";
+                document.body.classList.add("modal-open");
+                document.getElementById('form_Titel').innerText = "Nhập Thể Loại";
+                $("#CT_DienVien").select2({
+                    placeholder: '-- Chọn diễn viên --',
+                    minimumResultsForSearch: 1,
+                });
+                $("#CT_Hangs").select2({
+                    placeholder: '-- Chọn hãng --',
+                    minimumResultsForSearch: 1,
+                });
+                $("#CT_TheLoais").select2({
+                    placeholder: '-- Chọn thể loại --',
+                    minimumResultsForSearch: 1,
+                });
+                $("#Phim").select2({
+                    placeholder: '-- Chọn phim --',
+                    minimumResultsForSearch: 1,
+                });
+            } else if (name_modal == "modal_ckeditor") {
+                $('#modal_Form').hide();
+                modal.style.display = "block";
+                document.body.classList.add("modal-open");
+            }
+            else if (name_modal == "modal_FormTapPhim") {
+                modal.style.display = "block";
+                document.body.classList.add("modal-open");
+            }
+
+        }
+
+        
+        document.getElementById("upload-image").addEventListener("click", function () {
+            document.getElementById("Image").click();
+        });
+        document.getElementById("Image").addEventListener("change", function () {
+            var file = this.files[0];
+            var reader = new FileReader();
+            console.log(file);
+            reader.onload = function (e) {
+                var image = document.getElementById("upload-img");
+                image.src = e.target.result;
+                image.classList.remove("d-none");
+
+                document.getElementById("upload-image").getElementsByTagName('label')[0].classList.add("d-none");
+                //document.getElementById("upload-container").innerHTML = "";
+                document.getElementById("upload-image").appendChild(image);
+            };
+            if (file != null) {
+                reader.readAsDataURL(file);
+            }
+        });
+
+
+        // This sample still does not showcase all CKEditor 5 features (!)
+        // Visit https://ckeditor.com/docs/ckeditor5/latest/features/index.html to browse all the features.
+        CKEDITOR.ClassicEditor.create(document.getElementById("editor"), {
+            // https://ckeditor.com/docs/ckeditor5/latest/features/toolbar/toolbar.html#extended-toolbar-configuration-format
+            toolbar: {
+                items: [
+                    'exportPDF', 'exportWord', '|',
+                    'findAndReplace', 'selectAll', '|',
+                    'heading', '|',
+                    'bold', 'italic', 'strikethrough', 'underline', 'code', 'subscript', 'superscript', 'removeFormat', '|',
+                    'bulletedList', 'numberedList', 'todoList', '|',
+                    'outdent', 'indent', '|',
+                    'undo', 'redo',
+                    '-',
+                    'fontSize', 'fontFamily', 'fontColor', 'fontBackgroundColor', 'highlight', '|',
+                    'alignment', '|',
+                    'link', 'imageInsert', 'blockQuote', 'codeBlock', 'htmlEmbed', '|',
+                    'specialCharacters', 'horizontalLine', '|',
+                    'imageStyle:alignLeft', 'imageStyle:alignCenter', 'imageStyle:alignRight'
+                ],
+                shouldNotGroupWhenFull: false
+            },
+            image: {
+                // Cấu hình các kiểu căn chỉnh cho hình ảnh
+                styles: [
+                    'alignLeft', 'alignRight'
+                ]
+            },
+            // Changing the language of the interface requires loading the language file using the <script> tag.
+            language: 'vi',
+            language_list: ['en', 'vi'],
+            languageURL: {
+                en: '/ckeditor/build/translations/en.js',
+                vi: '/ckeditor/build/translations/vi.js'
+            },
+            contentCheck: false,
+            list: {
+                properties: {
+                    styles: true,
+                    startIndex: true,
+                    reversed: true
+                }
+            },
+            // https://ckeditor.com/docs/ckeditor5/latest/features/headings.html#configuration
+            heading: {
+                options: [
+                    { model: 'paragraph', title: 'Paragraph', class: 'ck-heading_paragraph' },
+                    { model: 'heading1', view: 'h1', title: 'Heading 1', class: 'ck-heading_heading1' },
+                    { model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2' },
+                    { model: 'heading3', view: 'h3', title: 'Heading 3', class: 'ck-heading_heading3' },
+                    { model: 'heading4', view: 'h4', title: 'Heading 4', class: 'ck-heading_heading4' },
+                    { model: 'heading5', view: 'h5', title: 'Heading 5', class: 'ck-heading_heading5' },
+                    { model: 'heading6', view: 'h6', title: 'Heading 6', class: 'ck-heading_heading6' }
+                ]
+            },
+            // https://ckeditor.com/docs/ckeditor5/latest/features/font.html#configuring-the-font-family-feature
+            fontFamily: {
+                options: [
+                    'default',
+                    'Arial, Helvetica, sans-serif',
+                    'Courier New, Courier, monospace',
+                    'Georgia, serif',
+                    'Lucida Sans Unicode, Lucida Grande, sans-serif',
+                    'Tahoma, Geneva, sans-serif',
+                    'Times New Roman, Times, serif',
+                    'Trebuchet MS, Helvetica, sans-serif',
+                    'Verdana, Geneva, sans-serif'
+                ],
+                supportAllValues: true
+            },
+            // https://ckeditor.com/docs/ckeditor5/latest/features/font.html#configuring-the-font-size-feature
+            fontSize: {
+                options: [10, 12, 14, 'default', 18, 20, 22],
+                supportAllValues: true
+            },
+            // Be careful with the setting below. It instructs CKEditor to accept ALL HTML markup.
+            // https://ckeditor.com/docs/ckeditor5/latest/features/general-html-support.html#enabling-all-html-features
+            htmlSupport: {
+                allow: [
+                    {
+                        attributes: true,
+                        classes: true,
+                        styles: true
+                    }
+                ]
+            },
+            // Be careful with enabling previews
+            // https://ckeditor.com/docs/ckeditor5/latest/features/html-embed.html#content-previews
+            htmlEmbed: {
+                showPreviews: true
+            },
+            link: {
+                decorators: {
+                    addTargetToExternalLinks: true,
+                    defaultProtocol: 'https://',
+                    toggleDownloadable: {
+                        mode: 'manual',
+                        label: 'Downloadable',
+                        attributes: {
+                            download: 'file'
+                        }
+                    }
+                }
+            },
+            // The "super-build" contains more premium features that require additional configuration, disable them below.
+            // Do not turn them on unless you read the documentation and know how to configure them and setup the editor.
+            removePlugins: [
+                // These two are commercial, but you can try them out without registering to a trial.
+                // 'ExportPdf',
+                // 'ExportWord',
+                'CKBox',
+                'CKFinder',
+                'EasyImage',
+                // This sample uses the Base64UploadAdapter to handle image uploads as it requires no configuration.
+                // https://ckeditor.com/docs/ckeditor5/latest/features/images/image-upload/base64-upload-adapter.html
+                // Storing images as Base64 is usually a very bad idea.
+                // Replace it on production website with other solutions:
+                // https://ckeditor.com/docs/ckeditor5/latest/features/images/image-upload/image-upload.html
+                // 'Base64UploadAdapter',
+                'RealTimeCollaborativeComments',
+                'RealTimeCollaborativeTrackChanges',
+                'RealTimeCollaborativeRevisionHistory',
+                'PresenceList',
+                'Comments',
+                'TrackChanges',
+                'TrackChangesData',
+                'RevisionHistory',
+                'Pagination',
+                'WProofreader',
+                // Careful, with the Mathtype plugin CKEditor will not load when loading this sample
+                // from a local file system (file://) - load this site via HTTP server if you enable MathType.
+                'MathType',
+                // The following features are part of the Productivity Pack and require additional license.
+                'SlashCommand',
+                'Template',
+                'DocumentOutline',
+                'FormatPainter',
+                'TableOfContents'
+            ]
+        })
+            .then(editor => {
+                editor.model.document.on("change:data", () => {
+                    const saveButton = document.querySelector('#btn_ckeditor');
+                    saveButton.addEventListener('click', () => {
+                        var content = editor.getData();
+                        document.getElementById("editorContainer").innerHTML = content;
+                        document.getElementById("Description").value = content;
+
+                        var modal = document.getElementById('modal_ckeditor');
+                        $('#modal_Form').show();
+                        modal.style.display = "none";
+                        document.body.classList.remove("modal-open");
+                    });
+                });
+            })
+            .catch(error => {
+                console.debug(error);
+            });
+    </script>
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

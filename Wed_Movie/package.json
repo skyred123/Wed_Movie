@@ -1,0 +1,7 @@
+{
+  "type": "module",
+  "dependencies": {
+    "country-list-js": "^3.1.7",
+    "tus-js-client": "^3.1.0"
+  }
+}

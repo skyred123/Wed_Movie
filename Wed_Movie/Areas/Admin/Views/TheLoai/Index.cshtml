@@ -1,0 +1,215 @@
+﻿@model Wed_Movie.DAO.TheLoaiDAO
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    ViewData["Title"] = "Thể Loại";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+<div class="col-sm-2">
+    <button id="add_TheLoai" type="button" class="my-3 p-2 btn btn-primary" data-bs-toggle="modal" data-bs-target="#modal_FormTheLoai">Thêm Thể Loại</button>
+</div>
+<table id="table" class="table table-striped table-bordered">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Name)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+
+<!-- Modal -->
+<div class="modal fade" tabindex="-1" id="modal_FormTheLoai">
+    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="formTitel_TheLoai"></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form class=""  id="formValid_TheLoai">
+            <input type="hidden" id="id_TheLoai" value="" />
+            <div class="form-group">
+                <label asp-for="Name" class="control-label"></label>
+                <input asp-for="Name"  class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn  btn-secondary close" data-bs-dismiss="modal" >Đóng</button>
+                <button id="btnSubmit" type="submit" class=" btn btn-primary">Xác Nhận</button>
+            </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+@section Scripts{
+    <script>
+        //Gọi hàm lấy danh sách thể loại
+        $(document).ready(function () {
+            GetDsTheLoai();  
+
+            $('#modal_FormTheLoai').on('hidden.bs.modal', function(e) {
+                $("#id_TheLoai").val("");
+                document.getElementById('formValid_TheLoai').reset();
+            });
+        });
+
+        //Lấy danh sách thể loại
+        function GetDsTheLoai(search) {
+            $.ajax({
+                url: '/Admin/TheLoai/GetDsTheLoai',
+                type: 'get',
+                data: {
+                    search: search,
+                },
+                success: function (data) {
+                    if (data.code == 200) {
+                        $("#table tbody").empty();
+                        $.each(data.dsTheLoai, function (k, v) {
+                            var str = '<tr class="" id="' + v.id + '">';
+                            str += "<td>" + v.name + "<td>";
+                            str += '<div class="btn-group" role="group">';
+                            str += '<button type="button" class="btn btn-warning" name="Update" data-bs-toggle="modal" data-bs-target="#modal_FormTheLoai"><i class="fa fa-compress"></i></button>';
+                            str += '<button class="btn btn-xs btn-danger text-end" name="Delete"><i class="fa fa-trash" aria-hidden="true"></i></button>';
+                            str += '</div>';
+                            str += "</td>";
+                            str += "</tr>";
+
+                            $("#table tbody").append(str);
+                        });
+                    }
+                    else if (data.code == 500) {
+                        alert(data.msg);
+                    }
+                }
+            });
+        };
+
+        //Gọi form nhập thể loại
+        $("#add_TheLoai").click(function () {
+            document.getElementById('formTitel_TheLoai').innerText = "Thêm Thể Loại";
+            $("#modal_FormTheLoai").modal();
+        });
+
+
+        //Xóa Dữ Liệu Thể Loại
+        $(document).on(`click`, "button[name=Delete]", function () {
+            var idTheLoai = $(this).closest('tr').attr('id');
+
+            $.ajax({
+                url: '/Admin/TheLoai/DeleteTheLoai',
+                type: 'post',
+                data: {
+                    id: idTheLoai,
+                },
+                success: function (data) {
+                    if (data.code == 200) {
+                        alert(data.msg);
+                        GetDsTheLoai();
+                    }
+                    else if (data.code == 500) {
+                        alert(data.msg);
+                    }
+                }
+            });
+        });
+
+        //Lấy Dữ Liệu Thể Loại
+        $(document).on(`click`, "button[name=Update]", function () {
+            var nameAction = "Update";
+            var nameHeader = "Cập Nhật Thể Loại";
+            var idTheLoai = $(this).closest('tr').attr('id');
+
+            $.ajax({
+                url: '/Admin/TheLoai/GetTheLoai',
+                type: 'get',
+                data: {
+                    id: idTheLoai,
+                },
+                success: function (data) {
+                    if (data.code == 200) {
+                        $("#Name").val(data.theLoai.name);
+                        $("#id_TheLoai").val(idTheLoai);
+
+                        document.getElementById('formTitel_TheLoai').innerText = nameHeader;
+                        $("#modal_FormTheLoai").modal();
+                    }
+                    else if (data.code == 500) {
+                        alert(data.msg);
+                    }
+                }
+            });
+        });
+
+
+        //Nghe Sự Kiện
+        document.addEventListener('DOMContentLoaded', (event) => {
+
+            //Tìm Kiếm
+            document.getElementById("form_Search").addEventListener("submit", function (e) {
+                e.preventDefault();
+                GetDsTheLoai($("#search").val());
+            });
+            document.getElementById("form_Search").addEventListener("keyup", function (e) {
+                GetDsTheLoai($("#search").val());
+            });
+
+            //Thêm Và Cập Thê Loai
+            document.getElementById("formValid_TheLoai").addEventListener("submit", function (e) {
+                e.preventDefault(); // Cancel the default action
+                var nameTheLoai = $("#Name").val();
+                var idTheLoai = $("#id_TheLoai").val();
+                if (idTheLoai.length > 0) {
+                    $.ajax({
+                        url: '/Admin/TheLoai/UpdateTheLoai',
+                        type: 'post',
+                        data: {
+                            id: idTheLoai,
+                            name: nameTheLoai,
+                        },
+                        success: function (data) {
+                            if (data.code == 200) {
+                                alert(data.msg);
+                                GetDsTheLoai();
+                            }
+                            else if (data.code == 500) {
+                                alert(data.msg);
+                            }
+                            $("#id_TheLoai").val("");
+                            document.getElementById('formValid_TheLoai').reset();
+                            $(".close").click();
+                        }
+                    });
+                }
+                else if (nameTheLoai.length >0) {
+                    $.ajax({
+                        url: '/Admin/TheLoai/AddTheLoai',
+                        type: 'post',
+                        data: {
+                            name: nameTheLoai,
+                        },
+                        success: function (data) {//dât dang null
+                            console.log(data.code);
+                            if (data.code == 200) {
+                                alert(data.msg);
+                                GetDsTheLoai();
+                            }
+                            else if (data.code == 500) {
+                                alert(data.msg);
+                            }
+                            $("#Name").val("");
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

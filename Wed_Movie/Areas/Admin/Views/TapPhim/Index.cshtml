@@ -1,0 +1,400 @@
+﻿@model Wed_Movie.DAO.TapPhimDao
+
+<style>
+    #description_TapPhim img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+
+    .link-style {
+        text-decoration: none;
+        color: black;
+        cursor: pointer;
+    }
+
+        .link-style:hover {
+            text-decoration: underline;
+        }
+</style>
+
+
+<div class="">
+    <div style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%;">
+        <video id="modal-video" src="" type="video/mp4" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" loop controls>
+        </video>
+        <div class="">
+            <progress id="video-progress" value="0" max="100" class="position-absolute bottom-0 w-100" style="right: 0; z-index:1"></progress>
+            <button id="btn_Muted" onclick="off_onMuted()" class="btn btn-link btn-icon position-absolute bottom-0 end-0"><i class="fas fa-volume-up"></i></button>
+        </div>
+        <button type="button" onclick="closeModal('modal_TapPhim')" class="btn btn-link btn-icon position-absolute top-0 end-0" style="position: absolute;top: 0; right: 0; padding: 8px; background-color: transparent; border: none; font-size: 18px;">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="modal-body">
+        <div class="row">
+            <div class="col-md-7">
+                <div class="">
+                    <label class="fw-bold">Phim:</label>
+                    <a id="name_TapPhim"></a>
+                </div>
+                <div class="border-5">
+                    <div class="fw-bold d-flex">Mô tả:</div>
+                    <div id="description_TapPhim" class="position-relative overflow-auto border" contenteditable="false" style="max-width:100%;max-height:200px;"></div>
+                </div>
+            </div>
+            <div class="col-md-5">
+                <div class="d-flex flex-column justify-content-between">
+                    <div class=" mb-4">
+                        <label class="fw-bold d-flex">Diễn viên:</label>
+                        <div id="dienvien_TapPhim">
+                        </div>
+                    </div>
+                    <div class=" mb-4">
+                        <label class="fw-bold d-flex">Thể Loại:</label>
+                        <div id="theloai_TapPhim">
+                        </div>
+                    </div>
+                    <div class=" mb-4">
+                        <label class="fw-bold d-flex">Hãng:</label>
+                        <div id="hang_TapPhim">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr />
+        <div class="d-flex justify-content-between">
+            <button onclick="getModal('modal_FormTapPhim')" class="btn btn-primary">Thêm Tập Phim</button>
+            <button>Checck </button>
+        </div>
+        <hr />
+        <div class="">
+            <table class="table table-striped" style="width:100%">
+                <tbody id="list_TapPhim" class="">
+                    @*<tr >
+                        <td class="text-center my-auto" style="vertical-align: middle;">1</td>
+                        <td class="text-center my-auto" style="vertical-align: middle;"><img src="~/Uploads\Images\thumb_1cb90b8e-0b6d-4709-a9a2-e2e29fbc543abea8c0b6267a451d954424143bc473cc.BMP" /></td>
+                        <td class="text-center my-auto " style="vertical-align: middle;">ten tap</td>
+                        <td class="text-center my-auto " style="vertical-align: middle;">thoi gian</td>
+                        <td class="text-center my-auto" style="vertical-align: middle;"><button>Xóa</button><button>Sữa</button></td>
+                    </tr>*@
+                </tbody>
+            </table>
+        </div>
+        <hr />
+        <div class="" id="modal_footer">
+            <h5 id="name_modal_footer"></h5>
+            <div class="d-flex mb-4">
+                <label class="fw-bold ">Diễn viên:</label>
+                <div id="dienvien_modal_footer">
+                </div>
+            </div>
+            <div class="d-flex mb-4">
+                <label class="fw-bold ">Thể Loại:</label>
+                <div id="theloai_modal_footer">
+                </div>
+            </div>
+            <div class="d-flex mb-4">
+                <label class="fw-bold ">Hãng:</label>
+                <div id="hang_modal_footer">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="modal_FormTapPhim">
+    <div class="modal-overlay"></div>
+    <div class="modal-dialog modal-dialog-centered model">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" >Nhập Tập Phim</h5>
+                <button onclick="closeModal('modal_FormTapPhim')" type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="form_tapphim" enctype="multipart/form-data">
+                    <input asp-for="PhanPhim" type="hidden" value="@ViewBag.IdPhanPhim" />
+                    <input asp-for="Id" type="hidden" id="Id" value="" />
+                    <div class="form-group my-2">
+                        <label for="Count">Số Thứ Tự:</label>
+                        <input asp-for="Count" type="number" class="form-control" min="1" />
+                        <span id="count_validation" asp-validation-for="Count" class="text-danger"></span>
+                    </div>
+                    
+                    <div class="form-group my-2">
+                        <label for="Name">Tên tập phim:</label>
+                        <input asp-for="Name" type="text" class="form-control" />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+                    <div class="form-group my-2">
+                        <label asp-for="UrlVideo" class="">Video:</label>
+                        <input asp-for="UrlVideo" type="file" class="form-control-file" accept="video/*" />
+                        <progress id="upload-progress1" value="0" max="100" style="width: 100%; height: 20px;"></progress>
+                    </div>
+                    <div class="modal-footer">
+                        <button onclick="closeModal('modal_FormTapPhim')" type="button" class="btn btn-secondary close" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class=" btn btn-primary ">Xác Nhận</button>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer d-flex">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var idPhanPhim = '@ViewBag.IdPhanPhim';
+
+    $(document).ready(function () {
+        setdataTapPhim();
+        setListTapPhim();
+    });
+
+    
+
+    function setListTapPhim(){
+         $.ajax({
+            url: '/Admin/TapPhim/GetListTapPhim',
+            type: 'get',
+            data: {
+                id: idPhanPhim,
+            },
+            success: function (data) {
+                if (data.code == 200) {
+                     $.each(data.listTapPhim, function (k, v) {
+                        var str =   "<tr >";
+                        str += '<td class="text-center my-auto" style = "vertical-align: middle;" > '+ v.count+' </td>';
+                        str += ' <td class="text-center my-auto" style="vertical-align: middle;"><img src="' + window.location.origin + '/' + v.urlImage + '" /></td>';
+                        str += '<td class="text-center my-auto " style="vertical-align: middle;">'+v.name+'</td>';
+                        str += '<td class="text-center my-auto" style="vertical-align: middle;">';
+                        str += '<button><i class="fa fa-sync"></i></button>';
+                        str += '<button type="button" onclick="DeleteTapPhim(\'' + v.id + '\')"><i class="fa fa-trash" aria-hidden="true"></button>';
+                        str += '</td>';
+                        str += '</tr>';
+                        $("#list_TapPhim").append(str);
+                     });
+                }
+                else if (data.code == 500) {
+                    alert(data.msg);
+
+                }
+            }
+        });
+    }
+
+    function DeleteTapPhim(id){
+        $.ajax({
+            url: '/Admin/TapPhim/DeleteTapPhim',
+            type: 'delete',
+            data: {
+                id:id,
+            },
+            success: function (data) {
+                if (data.code == 200) {
+                    alert(data.msg);
+                    setdataTapPhim();
+                }
+                else if (data.code == 500) {
+                    alert(data.msg);
+
+                }
+            }
+        });
+    }
+
+    document.getElementById("form_tapphim").addEventListener("submit", function (e) {
+        e.preventDefault(); // Cancel the default action
+        var formData = new FormData($(this)[0]);
+        if (formData.get("Id").length > 0) {
+            $.ajax({
+                url: '/Admin/PhanPhim/UpdatePhanPhim',
+                type: 'put',
+                dataType: 'json',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (data) {
+                    if (data.code == 200) {
+                        alert(data.msg);
+                        ListPhanPhim();
+                    }
+                    else if (data.code == 500) {
+                        alert(data.msg);
+
+                    }
+                    resetModal();
+                    closeModal("modal_Form");
+                },
+                xhr: function () {
+                    var xhr = new window.XMLHttpRequest();
+                    //document.getElementById('modal_Form').prop('disabled', true);
+                    // Lắng nghe sự kiện progress
+                    xhr.upload.onprogress = function (e) {
+                        if (e.lengthComputable) {
+                            var percent = (e.loaded / e.total) * 100;
+                            // Cập nhật giá trị của thanh tiến trình
+                            $('#upload-progress').val(percent);
+                        }
+                    };
+                    return xhr;
+                },
+            });
+        }
+        else {
+            $.ajax({
+                url: '/Admin/TapPhim/AddTapPhim',
+                type: 'post',
+                dataType: 'json',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (data) {
+                    if (data.code == 200) {
+                        alert(data.msg);
+                    }
+                    else if (data.code == 500) {
+                        alert(data.msg);
+                    }
+                    setdataTapPhim();
+                },
+                xhr: function () {
+                    var xhr = new window.XMLHttpRequest();
+                    //document.getElementById('modal_Form').prop('disabled', true);
+                    // Lắng nghe sự kiện progress
+                    xhr.upload.onprogress = function (e) {
+                        if (e.lengthComputable) {
+                            var percent = (e.loaded / e.total) * 100;
+                            // Cập nhật giá trị của thanh tiến trình
+                            $('#upload-progress1').val(percent);
+                        }
+                    };
+                    return xhr;
+                },
+            });
+        }
+    });
+
+    function myFunction(name, id) {
+        // Xử lý các hành động khi người dùng nhấn vào liên kết
+        console.log("Đã nhấn vào liên kết: " + id);
+        // Tiếp tục xử lý các hành động khác...
+    }
+
+    function SetModalTapPhim(data) {
+        var form = document.getElementById('form_tapphim');
+        document.getElementById('Count').max = data.tapPhim.length + 1;
+        form.elements['Count'].value = data.tapPhim.length+1;
+        form.elements['Name'].value = "Tập " + (data.tapPhim.length + 1);
+    }
+    document.getElementById('Count').addEventListener('input', function () {
+        var count = document.getElementById('Count');
+        var min = parseInt(count.min);
+        var max = parseInt(count.max);
+        var value = parseInt(count.value);
+
+        if (value < min) {
+            count.value = min;
+            document.getElementById('count_validation').textContent = "Giá trị nhỏ nhất: " + min;
+            
+        } else if (value > max) {
+            count.value = max;
+            document.getElementById('count_validation').textContent = "Giá trị lớn nhất: " + max;
+        }
+    });
+
+    function setdataTapPhim(){
+        GetPhanPhim(idPhanPhim).then(function (data) {
+            SetModalTapPhim(data);
+
+            var video = document.getElementById("modal-video");
+            var videoURL = window.location.origin + '/' + data.trailer;
+            
+            request.open('GET', videoURL, true);
+            request.responseType = 'blob';
+
+            request.onload = function () {
+                if (request.status === 200) {
+                    const videoBlob = request.response;
+                    const videoURL = URL.createObjectURL(videoBlob);
+                    video.src = videoURL;
+                    video.addEventListener('loadedmetadata', function () {
+                        video.play();
+                    });
+                }
+            };
+            request.onprogress = function(event) {
+            if (event.lengthComputable) {
+                  const percentComplete = (event.loaded / event.total) * 100;
+                }
+              };
+            request.send();
+
+
+            document.getElementById("name_TapPhim").innerText = data.name;
+            document.getElementById("name_modal_footer").innerText = "Giới Thiệu Về " + data.name;
+            document.getElementById("description_TapPhim").innerHTML = data.description;
+            var index = 0;
+            $.each(data.cT_DienVien, function (k, v) {
+                if (index < 6) {
+                    var str = '<span><a class="link-style" onclick="myFunction(\'dienvien\',\'' + v.dienVien.id + '\')" style=" color: black;">' + v.dienVien.name +'</a>'+", "+'</span>';
+                    $("#dienvien_TapPhim").append(str);
+                    index++;
+                }
+                $("#dienvien_modal_footer").append('<span><a class="link-style" onclick="myFunction(\'dienvien\',\'' + v.dienVien.id + '\')" style="none; color: black;">' + v.dienVien.name + '</a>' + ", " + '</span>');
+            });
+            $("#dienvien_TapPhim").append(' <span><a href="#modal_footer" style=" color: black;">Xem thêm</a></span >');
+            index = 0;
+            $.each(data.cT_Hangs, function (k, v) {
+                if (index < 6) {
+                    var str = '<span><a a class="link-style" onclick="myFunction(\'hang\',\'' + v.hang.id + '\')" style="color: black;">' + v.hang.name + '</a>' + ", " + '</span>';
+                    $("#hang_TapPhim").append(str);
+                    index++;
+                }
+                $("#hang_modal_footer").append('<span><a a class="link-style" onclick="myFunction( \'hang\',\'' + v.hang.id + '\')" style=" color: black;">' + v.hang.name + '</a>' + ", " + '</span>');
+            });
+            $("#hang_TapPhim").append(' <span><a href="#modal_footer" style=" color: black;" >Xem thêm</a></span >');
+            index = 0;
+            $.each(data.cT_TheLoais, function (k, v) {
+                if (index < 6) {
+                    var str = '<span><a a class="link-style" onclick="myFunction( \'theloai\', \'' + v.theLoai.id + '\')" style="color: black;">' + v.theLoai.name + '</a>' + ", " + '</span>';
+                    $("#theloai_TapPhim").append(str);
+                    index++;
+                }
+                var str = 
+                $("#theloai_modal_footer").append('<span><a a class="link-style" onclick="myFunction(\'theloai\', \'' + v.theLoai.id + '\')" style=" color: black;">' + v.theLoai.name + '</a>' + ", " + '</span>');
+            });
+            $("#theloai_TapPhim").append(' <span><a href="#modal_footer" style=" color: black;">Xem thêm</a></span >');
+            
+        })
+        .catch(function (error) {
+            console.error('Lỗi:', error);
+        });
+    }
+
+    function off_onMuted() {
+        var videoElement = $("#modal-video");
+        var btnMuted = $("#btn_Muted");
+        if (videoElement.prop('muted')) {
+            // Nếu âm đã tắt, bật âm
+            videoElement.prop('muted', false);
+            btnMuted.html('<i class="fas fa-volume-up"></i>');
+        } else {
+            // Nếu âm đã bật, tắt âm
+            videoElement.prop('muted', true);
+            btnMuted.html('<i class="fas fa-volume-mute"></i>');
+        }
+    }
+
+    document.getElementById('modal-video').addEventListener('timeupdate', function () {
+        var videoElement = document.getElementById('modal-video');
+        var currentTime = videoElement.currentTime;
+        var duration = videoElement.duration;
+
+        if (!isNaN(currentTime) && !isNaN(duration)) {
+            var progressValue = (currentTime / duration) * 100;
+            $('#video-progress').val(progressValue);
+        }
+    });
+</script>

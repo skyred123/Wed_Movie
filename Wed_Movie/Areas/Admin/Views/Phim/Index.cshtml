@@ -1,0 +1,201 @@
+﻿@model Wed_Movie.DAO.PhimDAO
+@{
+    ViewData["Title"] = "Phim";
+    Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
+}
+<div class="col-sm-2">
+    <button id="btn_Add" type="button" class="my-3 p-2 btn btn-primary" data-bs-toggle="modal" data-bs-target="#modal_Form">Thêm Thể Loại</button>
+</div>
+<table class="table ">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Name)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody class="List_Form">
+    </tbody>
+</table>
+
+<!-- Modal -->
+<div class="modal fade" tabindex="-1" id="modal_Form">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="form_Titel"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                
+                <form id="form_Valid">
+                    <input asp-for="Id" type="hidden" id="Id" value="" />
+                    <div class="form-group">
+                        <label asp-for="Name" class="control-label"></label>
+                        <input asp-for="Name" class="form-control" />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary close" data-bs-dismiss="modal">Đóng</button>
+                        <button id="btnSubmit" type="submit" class=" btn btn-primary">Xác Nhận</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts{
+    <script>
+        $(document).ready(function () {
+            GetDsPhim();
+
+            $('#modal_Form').on('hidden.bs.modal', function (e) {
+                $("#Id").val("");
+                document.getElementById('form_Valid').reset();
+            });
+        });
+        function GetDsPhim(search) {
+            $.ajax({
+                url: '/Admin/Phim/GetDsPhim',
+                type: 'get',
+                data: {
+                    search: search,
+                },
+                success: function (data) {
+                    if (data.code == 200) {
+                        $(".List_Form").empty();
+                        $.each(data.dsDienVien, function (k, v) {
+                            var str = '<tr class="" id="' + v.id + '">';
+                            str += "<td>" + v.name + "<td>";
+                            str += '<td class="">';
+                            str += '<button type="button" class="btn btn-warning" name="Update" data-bs-toggle="modal" data-bs-target="#modal_Form"><i class="fa fa-compress"></i></button>&nbsp';
+                            str += '<button class="btn btn-xs btn-danger text-end" name="Delete"><i class="fa fa-trash" aria-hidden="true"></i></button>';
+                            str += "</td>";
+                            str += "</tr>";
+
+                            $(".List_Form").append(str);
+                        });
+                    }
+                    else if (data.code == 500) {
+                        alert(data.msg);
+                    }
+                }
+            });
+        };
+
+        $(document).on(`click`, "button[name=Update]", function () {
+            var nameAction = "Update";
+            var nameHeader = "Cập Nhật Hãng Phim";
+            var idPhim = $(this).closest('tr').attr('id');
+
+            $.ajax({
+                url: '/Admin/Phim/GetPhim',
+                type: 'get',
+                data: {
+                    id: idPhim,
+                },
+                success: function (data) {
+                    if (data.code == 200) {
+                        console.log(data);
+                        $("#Name").val(data.phim.name);
+                        $("#Id").val(idPhim);
+                        document.getElementById('form_Titel').innerText = nameHeader;
+                        $("#modal_Form").modal();
+                    }
+                    else if (data.code == 500) {
+                        alert(data.msg);
+                    }
+                }
+            });
+        });
+
+        $(document).on(`click`, "button[name=Delete]", function () {
+            var idPhim = $(this).closest('tr').attr('id');
+            $.ajax({
+                url: '/Admin/Phim/DeletePhim',
+                type: 'post',
+                data: {
+                    id: idPhim,
+                },
+                success: function (data) {
+                    if (data.code == 200) {
+                        alert(data.msg);
+                        GetDsPhim();
+                    }
+                    else if (data.code == 500) {
+                        alert(data.msg);
+                    }
+                }
+            });
+        });
+        //Nghe Sự Kiện
+        document.addEventListener('DOMContentLoaded', (event) => {
+
+            document.getElementById("form_Search").addEventListener("submit", function (e) {
+                e.preventDefault();
+                GetDsPhim($("#search").val());
+            });
+            document.getElementById("form_Search").addEventListener("keyup", function (e) {
+                GetDsPhim($("#search").val());
+            });
+
+            //Gọi form nhập thể loại
+            $("#btn_Add").click(function () {
+                document.getElementById('form_Titel').innerText = "Thêm Phim";
+                $("#modal_Form").modal();
+            });
+
+            //Thêm Và Cập Nhật
+            document.getElementById("form_Valid").addEventListener("submit", function (e) {
+                e.preventDefault(); // Cancel the default action
+
+                var formData = new FormData($(this)[0]);
+                var id = $("#Id").val();
+                if (id.length > 0) {
+                    $.ajax({
+                        url: '/Admin/Phim/UpdatePhim',
+                        type: 'post',
+                        data: formData,
+                        dataType: "json",
+                        contentType: false,
+                        processData: false,
+                        success: function (data) {
+                            if (data.code == 200) {
+                                alert(data.msg);
+                                GetDsPhim();
+                            }
+                            else if (data.code == 500) {
+                                alert(data.msg);
+                            }
+                            document.getElementById('form_Valid').reset();
+                            $(".close").click();
+                        }
+                    });
+                }
+                else{
+                    $.ajax({
+                    url: '/Admin/Phim/AddPhim',
+                    type: 'post',
+                    data: formData,
+                    dataType: "json",
+                    contentType: false,
+                    processData: false,
+                    success: function (data) {
+                        if(data.code == 200){
+                            alert(data.msg);
+                            GetDsPhim();
+                        }
+                        else{
+                            alert(data.msg);
+                        }
+                    }
+                });
+                }
+            });
+        });
+    </script>
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
