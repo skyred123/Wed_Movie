@@ -1,9 +1,11 @@
 ﻿@using Microsoft.AspNetCore.Identity
-@using Wed_Movie.Data
+@using Wed_Movie.Entities;
 
-@inject SignInManager<AppUser> SignInManager
-@inject UserManager<AppUser> UserManager
+@model  string
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
 @{
+    var url = Context.Request.GetDisplayUrl();
 }
 <ul class="navbar-nav">
 @if (SignInManager.IsSignedIn(User))
@@ -18,12 +20,57 @@
 else
 {
     <li class="nav-item">
-            <a class="nav-link text-dark" id="register" asp-controller="Account" asp-route-strURL="" asp-action="Register">Register</a>
-    </li>
-    <li class="nav-item">
-            <a class="nav-link text-dark" id="login" asp-controller="Account"  asp-action="Login">Login</a>
+            <button onclick="getform()" class="nav-link text-dark border-0 rounded-circle" id="login" data-bs-toggle="modal" data-bs-target="#accountModal" style="background-color:#0b5ed7"><span class="icon">A</span></button>
     </li>
 }
 </ul>
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script>
+    $(document).ready(function () {
+        var model = @Html.Raw(Model != null ? Json.Serialize(Model) : "null");
+       
+        if(model == null){
+
+        }
+        else if (model == "ProcessEmail") {
+            document.getElementById('loginregisterModal').classList.add('d-none');
+            document.getElementById('processemailModal').classList.remove('d-none');
+            $.get('/Account/ProcessEmailConfirm', {}, function (data) {
+                // Đặt nội dung Partial View vào một phần tử trên trang
+                $('#processemailModal').html(data);
+                $('#accountModal').modal('show');
+            });
+        }
+    });
+
+    function getform(){
+        document.getElementById('loginregisterModal').classList.remove('d-none');
+        document.getElementById('processemailModal').classList.add('d-none');
+        $('#loginTab').click();
+        $.get('/Account/Login', {}, function (data) {
+            // Đặt nội dung Partial View vào một phần tử trên trang
+            $('#loginForm').html(data);
+            $('#registerForm').html("");
+        });
+    }
+
+    function handleClick(tab) {
+        if (tab === 'login') {
+            $.get('/Account/Login', {}, function (data) {
+                // Đặt nội dung Partial View vào một phần tử trên trang
+                $('#loginForm').html(data);
+                //$('#registerForm').html("");
+            });
+        } else if (tab === 'register') {
+            $.get('/Account/Register', {}, function (data) {
+                // Đặt nội dung Partial View vào một phần tử trên trang
+                $('#registerForm').html(data);
+                // $('#loginForm').html("");
+            });
+        }
+    }
+
+    
+</script>
 
        

@@ -46,6 +46,6 @@
     if (autoClose) {
         setTimeout(() => {
             alert.remove();
-        }, 5000 );
+        }, 50000 );
     }
 }

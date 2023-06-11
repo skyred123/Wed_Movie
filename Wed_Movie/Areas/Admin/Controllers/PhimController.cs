@@ -1,14 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.SqlServer.Server;
-using System.Data;
+using MovieModel.Config;
+using MovieModel.Service;
 using Wed_Movie.DAO;
-using Wed_Movie.Data.BLL;
 using Wed_Movie.DI;
-using Wed_Movie.Functions;
-using Wed_Movie.Helpers;
-using Wed_Movie.Models;
+using Wed_Movie.Entities;
 
 namespace Wed_Movie.Areas.Admin.Controllers
 {
@@ -17,10 +14,14 @@ namespace Wed_Movie.Areas.Admin.Controllers
     public class PhimController : Controller
     {
         private readonly IUploadFile _upLoadFile;
+        private readonly PhimService _phimService;
+        private readonly TransactionService _transactionService;
 
-        public PhimController(IUploadFile upLoadFile)
+        public PhimController(IUploadFile upLoadFile,PhimService phimService, TransactionService transactionService)
         {
             _upLoadFile = upLoadFile;
+            _phimService = phimService;
+            _transactionService = transactionService;
         }
 
         public IActionResult Index()
@@ -33,7 +34,7 @@ namespace Wed_Movie.Areas.Admin.Controllers
         {
             try
             {
-                return Json(new { code = 200, phim = PhimBLL.Item(id) });
+                return Json(new { code = 200, phim = _phimService.GetPhimId(id).FirstOrDefault()});
             }
             catch (Exception ex)
             {
@@ -46,7 +47,16 @@ namespace Wed_Movie.Areas.Admin.Controllers
         {
             try
             {
-                return Json(new { code = 200, dsDienVien = PhimBLL.List(search) });
+                var listPhim = new List<Phim>();
+                if (search.IsNullOrEmpty())
+                {
+                    listPhim = _phimService.GetListPhims().ToList();
+                }
+                else
+                {
+                    listPhim = _phimService.SearchNamePhims(search).ToList();
+                }
+                return Json(new { code = 200, dsDienVien = listPhim });
             }
             catch(Exception ex)
             {
@@ -55,49 +65,60 @@ namespace Wed_Movie.Areas.Admin.Controllers
         }
 
         [HttpPost]
-        public async Task<JsonResult> AddPhimAsync(PhimDAO phimDAO)
+        public JsonResult AddPhim(PhimDAO phimDAO)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                if (phimDAO != null)
-                {
-                    var phim = new Phim() { Id = Guid.NewGuid().ToString(), Name = phimDAO.Name };
-
-                    if (PhimBLL.Add(phim))
-                    {
-                        return Json(new { code = 200, msg = "Thêm phim thành công:" });
-                    }
-                }
                 return Json(new { code = 500, msg = "Thêm phim Thất Bại:" });
             }
-            else
+            try
             {
-                return Json(new { code = 500, msg = "Thêm phim Thất Bại:" });
+                var phim = new Phim()
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Name = phimDAO.Name
+                };
+
+                _transactionService.ExecuteTransaction(() => _phimService.AddPhim(phim));
+                return Json(new { code = 200, msg = "Thêm phim thành công:" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { code = 500, msg = "Thêm phim Thất Bại: " + ex.Message });
             }
         }
         [HttpPost]
         public JsonResult UpdatePhim(PhimDAO phimDAO)
         {
-            var phim = new Phim()
+            try
             {
-                Id = phimDAO.Id,
-                Name = phimDAO.Name,
-            };
-            if (PhimBLL.Update(phim))
-            {
-                return Json(new { code = 200, msg = "Lưu Thành công" });
+                var phim = new Phim()
+                {
+                    Id = phimDAO.Id,
+                    Name = phimDAO.Name,
+                };
+                _transactionService.ExecuteTransaction(() => _phimService.UpdatePhim(phim));
+                return Json(new { code = 200, msg = "Lưu phim Thành công" });
             }
-            return Json(new { code = 500, msg = "Lưu Thể Loại Thất Bại:" });
+            catch(Exception ex)
+            {
+                return Json(new { code = 500, msg = "Lưu phim Thất Bại:" });
+            }
         }
 
         [HttpPost]
         public JsonResult DeletePhim(string id)
         {
-            if (PhimBLL.Delete(id))
+            try
             {
-                return Json(new { code = 200, msg = "Xóa Thành công" });
+                _transactionService.ExecuteTransaction(() => _phimService.DeletePhim(id));
+                return Json(new { code = 200, msg = "Xóa phim Thành công" });
+
             }
-            return Json(new { code = 500, msg = "Xóa Thể Loại Thất Bại:" });
+            catch(Exception ex)
+            {
+                return Json(new { code = 500, msg = "Xóa phim Thất Bại:" });
+            }
         }
 
     }

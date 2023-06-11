@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Wed_Movie.Models
 {
@@ -21,14 +22,14 @@ namespace Wed_Movie.Models
 
         [StringLength(128)]
         public string? PhimId { get; set; }
-
+        [ForeignKey("PhimId")]
         public Phim? Phim { get; set; }
 
-        public List<CT_DienVien>? CT_DienVien { get; set; }
-        public List<TapPhim>? TapPhim { get; set; }
+        public List<CT_DienVien?>? CT_DienVien { get; set; }
+        public List<TapPhim?>? TapPhim { get; set; }
 
-        public List<CT_Hang>? CT_Hangs { get; set; }
+        public List<CT_Hang?>? CT_Hangs { get; set; }
 
-        public List<CT_TheLoai>? CT_TheLoais { get; set; }
+        public List<CT_TheLoai?>? CT_TheLoais { get; set; }
     }
 }

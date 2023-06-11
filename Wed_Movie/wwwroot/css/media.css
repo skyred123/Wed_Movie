@@ -1,0 +1,6 @@
+﻿@media (max-width: 768px) {
+    #list .col-md-3 {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+}

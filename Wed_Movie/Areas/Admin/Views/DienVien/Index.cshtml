@@ -8,16 +8,19 @@
 
     
 </style>
+<link href="~/css/table.css" rel="stylesheet" />
 <div class="col-sm-2">
-    <button id="add_DienVien" onclick="GetModal()" type="button" class="my-3 p-2 btn btn-primary">Thêm Diễn Viên</button>
+    <button id="add_DienVien" onclick="GetModal()" type="button" class="my-3 p-2 custom-btn block-animation-button"><span>Chọn!</span><span>Thêm Diễn Viên</span></button>
 </div>
-<table class="table table-striped" id="example" style="width:100%">
+<table id="table_dienvien" class="custom-table" cellspacing="0" cellpadding="0" style="width:100%; table-layout:auto" >
     <thead>
-        <tr>
-            <th>
+        <tr class="bg-light">
+            <th class="text-center">
                 @Html.DisplayNameFor(model => model.Name)
             </th>
-            <th></th>
+            <th>
+                
+            </th>
         </tr>
     </thead>
     <tbody class="dsDienVien">
@@ -47,7 +50,7 @@
                     </div>
                     <div class="form-group my-2">
                         <label for="Nationality">Quốc gia:</label>
-                        @Html.DropDownListFor(model => model.Nationality, new SelectList(ViewBag.Nationalities), new { @class = "form-control" })
+                        @Html.DropDownListFor(model => model.Nationality, (SelectList)ViewBag.Nationalities, new { @class = "form-control" })
                         <span asp-validation-for="Nationality" class="text-danger"></span>
                     </div>
                     <div class="form-group my-2">
@@ -70,8 +73,8 @@
                     </div>
     
                     <div class="modal-footer">
-                        <button onclick="closeModal()" type="button" class="btn btn-secondary close" data-bs-dismiss="modal">Đóng</button>
-                        <button id="btnSubmit" type="submit" class=" btn btn-primary">Xác Nhận</button>
+                        <button onclick="closeModal()" type="button" class="custom-btn block-animation-button custom-gradient-dark"><span>Chọn!</span><span>Đóng</span></button>
+                        <button id="btnSubmit" type="submit" class="custom-btn block-animation-button"><span>Chọn!</span><span>Xác Nhận</span></button>
                     </div>
                 </form>
             </div>
@@ -83,6 +86,7 @@
 @section Scripts{
     <script>
         $(document).ready(function () {
+            
             GetDsDienVien();
             
         });
@@ -133,17 +137,33 @@
                 },
                 success: function (data) {
                     if (data.code == 200) {
+                        if ($.fn.DataTable.isDataTable('#table_dienvien')) {
+                            $('#table_dienvien').DataTable().destroy();
+                        }
                         $(".dsDienVien").empty();
                         $.each(data.dsDienVien, function (k, v) {
-                            var str = '<tr class="" id="' + v.id + '">';
-                            str += "<td>" + v.name + "<td>";
-                            str += '<td class="">';
-                            str += '<button onclick="GetModal()" type="button" class="btn btn-warning" name="Update" ><i class="fa fa-compress"></i></button>&nbsp';
-                            str += '<button class="btn btn-xs btn-danger text-end" name="Delete"><i class="fa fa-trash" aria-hidden="true"></i></button>';
+                            var str = '<tr class="text-center" id="' + v.id + '">';
+                            str += "<td>" + v.name + "</td>";
+                            str += '<td>';
+                            str += '<div>';
+                            str += '<button onclick="GetModal()" type="button" class="custom-btn block-animation-button custom-gradient-yellow" name="Update" ><span>Chọn!</span><span>Cập Nhật</span></button>';
+                            str += '<button class="custom-btn block-animation-button custom-gradient-red" name="Delete"><span>Chọn!</span><span>Xóa</span></button>';
+                            str += '</div>';
                             str += "</td>";
                             str += "</tr>";
                             $(".dsDienVien").append(str);
                         });
+                        if (!$.fn.dataTable.isDataTable('#table_dienvien')) {
+                            // Nếu DataTable chưa được khởi tạo, thực hiện khởi tạo
+                            $('#table_dienvien').DataTable({
+                                destroy: true,
+                                searching: false,
+                                "columns": [
+                                    null, // Cột 1 - vô hiệu hóa sắp xếp
+                                    { "orderable": false }, // Các cột khác - mặc định cho sắp xếp
+                                ]
+                            });
+                        }
                     }
                     else if (data.code == 500) {
                         alert(data.msg);

@@ -1,5 +1,4 @@
 ﻿<!DOCTYPE html>
-@using React.AspNet
 <html lang="en">
     <head>
         <meta charset="utf-8" />
@@ -7,21 +6,25 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
         <meta name="description" content="" />
         <meta name="author" content="" />
-        <title>MovieStart</title>
+        <title>T&T Movies</title>
         <link href="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/style.min.css" rel="stylesheet" />
         <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
         <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
         <link rel="stylesheet" href="~/Wed_Movie.styles.css" asp-append-version="true" />
         <link href="~/css/styles.css" rel="stylesheet" />
         <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js"></script>
+    <link href="~/css/card.css" rel="stylesheet" />
+    <link href="~/css/card.css" rel="stylesheet" />
+        <link href="~/css/button.css" rel="stylesheet" />
         <link href="~/css/modal.css" rel="stylesheet" />
         <link href="~/css/alert.css" rel="stylesheet" />
-        <link href="~/css/image.css" rel="stylesheet" />
+    <link href="~/css/image.css" rel="stylesheet" />
+    <link href="~/css/media.css" rel="stylesheet" />
 </head>
-    <body class="sb-nav-fixed modal-open">
+<body class="sb-nav-fixed">
         <nav class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
             <!-- Navbar Brand-->
-            <a class="navbar-brand ps-3" href="@Url.Action( "Index", "Home", new { area = "Admin" })">Movie Start</a>
+        <a class="navbar-brand ps-3" href="@Url.Action( "Index", "Home", new { area = "Admin" })" style="color:blue;"> T&T Movies </a>
             <!-- Sidebar Toggle-->
             <button class="btn btn-link btn-sm order-1 order-lg-0 me-4 me-lg-0" id="sidebarToggle" href="#!"><i class="fas fa-bars"></i></button>
             <!-- Navbar Search-->
@@ -77,14 +80,10 @@
                             </a>
                         </div>
                     </div>
-                    <div class="sb-sidenav-footer">
-                        <div class="small">Logged in as:</div>
-                        Start Bootstrap
-                    </div>
                 </nav>
             </div>
             <div id="layoutSidenav_content">
-                <main class="main-content" id="main-content" style="overflow-y:scroll;max-height:610px">
+                <main class="overflow-auto main-content" id="main-content" style="height:auto;">
                     <div class="container-fluid px-4">
                         @RenderBody()
                     </div>
@@ -92,28 +91,29 @@
                 <footer class="py-4 bg-light mt-auto">
                     <div class="container-fluid px-4">
                         <div class="d-flex align-items-center justify-content-between small">
-                            <div class="text-muted">Copyright &copy; Your Website 2023</div>
-                            <div>
-                                <a href="#">Privacy Policy</a>
-                                &middot;
-                                <a href="#">Terms &amp; Conditions</a>
-                            </div>
                         </div>
                     </div>
                 </footer>
             </div>
         </div>
-       
+
+
         <script src="~/lib/jquery/dist/jquery.min.js"></script>
         <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
         <script src="~/js/site.js" asp-append-version="true"></script>
-
         <script src="~/js/alert.js"></script>
         <script src="~/js/sidebar.js"></script>
+    <script src="~/js/card.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.css" />
+
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.js"></script>
+
         <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
         <script src="https://cdn.ckeditor.com/ckeditor5/37.1.0/super-build/ckeditor.js"></script>
         <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js" />
         <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+
+
         @await RenderSectionAsync("Scripts", required: false)
     </body>
 </html>

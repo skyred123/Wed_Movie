@@ -1,9 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using MovieModel.Config;
+using MovieModel.Service;
 using Wed_Movie.DAO;
-using Wed_Movie.Data.BLL;
 using Wed_Movie.DI;
-using Wed_Movie.Functions;
-using Wed_Movie.Models;
+using Wed_Movie.Entities;
 
 namespace Wed_Movie.Areas.Admin.Controllers
 {
@@ -11,9 +12,13 @@ namespace Wed_Movie.Areas.Admin.Controllers
     public class TapPhimController : Controller
     {
         private readonly IUploadFile _upLoadFile;
-        public TapPhimController(IUploadFile upLoadFile)
+        private readonly TapPhimService _tapPhimService;
+        private readonly TransactionService _transactionService;
+        public TapPhimController(IUploadFile upLoadFile, TapPhimService tapPhimService, TransactionService transactionService)
         {
             _upLoadFile = upLoadFile;
+            _tapPhimService = tapPhimService;
+            _transactionService = transactionService;
         }
 
         [HttpGet]
@@ -27,8 +32,7 @@ namespace Wed_Movie.Areas.Admin.Controllers
         {
             try
             {
-                var check = TapPhimBLL.Item(id);
-                return Json(new { code = 200, item = TapPhimBLL.Item(id) });
+                return Json(new { code = 200, item = _tapPhimService.GetAllTapPhimId(id).FirstOrDefault() });
             }
             catch (Exception ex)
             {
@@ -36,11 +40,20 @@ namespace Wed_Movie.Areas.Admin.Controllers
             }
         }
         [HttpGet]
-        public JsonResult GetListTapPhim(string id)
+        public JsonResult GetListTapPhim(string id, string? search)
         {
             try
             {
-                return Json(new { code = 200, listTapPhim = TapPhimBLL.ListTapPhim(id).OrderByDescending(e => e.Count).ToList() });
+                var listtapphim = new List<TapPhim>();
+                if (!id.IsNullOrEmpty())
+                {
+                    listtapphim = _tapPhimService.GetTapPhimByPhanPhimId(id).ToList();
+                }
+                else if(!search.IsNullOrEmpty())
+                {
+                    listtapphim = _tapPhimService.SearchNameTapPhims(search).ToList();
+                }
+                return Json(new { code = 200, listTapPhim = listtapphim });
             }
             catch (Exception ex)
             {
@@ -52,6 +65,10 @@ namespace Wed_Movie.Areas.Admin.Controllers
         public async Task<JsonResult> AddTapPhim(TapPhimDao tapPhimDao)
         {
             if (ModelState.IsValid)
+            {
+                return Json(new { code = 500, msg = "Thêm mới Thất Bại:" });
+            }
+            try
             {
                 if (tapPhimDao == null)
                 {
@@ -71,51 +88,38 @@ namespace Wed_Movie.Areas.Admin.Controllers
                     tapPhim.UrlVideo = upload.filePath;
                     tapPhim.UrlImage = upload.ThumbFilePath;
                 }
-                if (TapPhimBLL.Add(tapPhim))
+                else
                 {
-                    return Json(new { code = 200, msg = "Thêm mới Thành công" });
+                    return Json(new { code = 500, msg = "Thêm mới Thất Bại:" });
                 }
+                _transactionService.ExecuteTransaction(() => _tapPhimService.AddTapPhim(tapPhim));
+                return Json(new { code = 200, msg = "Thêm mới Thành công" });
+            }
+            catch(Exception ex)
+            {
                 return Json(new { code = 500, msg = "Thêm mới Thất Bại:" });
             }
-            return Json(new { code = 500, msg = "Thêm mới Thất Bại:" });
+        }
+
+
+        [HttpPut]
+        public JsonResult UpdateTapPhim(TapPhimDao tapPhimDao)
+        {
+            return Json(new { code = 500, msg = "Xóa Thể Loại Thất Bại:" });
         }
 
         [HttpDelete]
         public JsonResult DeleteTapPhim(string id)
         {
-            var tapphim = TapPhimBLL.Item(id);
-            if (tapphim.UrlImage == null || tapphim.UrlVideo == null)
+            var tapphim = _tapPhimService.GetAllTapPhimId(id).FirstOrDefault();
+            if (tapphim != null)
             {
-                if (tapphim.UrlImage == null && _upLoadFile.DeleteFile(tapphim.UrlVideo))
-                {
-                    if (TapPhimBLL.Delete(tapphim))
-                    {
-                        return Json(new { code = 200, msg = "Xóa Thành công" });
-                    }
-                }
-                else if (tapphim.UrlVideo == null && _upLoadFile.DeleteFile(tapphim.UrlImage))
-                {
-                    if (TapPhimBLL.Delete(tapphim))
-                    {
-                        return Json(new { code = 200, msg = "Xóa Thành công" });
-                    }
-                }
-                else
-                {
-                    if (TapPhimBLL.Delete(tapphim))
-                    {
-                        return Json(new { code = 200, msg = "Xóa Thành công" });
-                    }
-                }
+                _upLoadFile.DeleteFile(tapphim.UrlVideo);
+                _upLoadFile.DeleteFile(tapphim.UrlImage);
+                _transactionService.ExecuteTransaction(() => _tapPhimService.DeleteTapPhim(id));
+                return Json(new { code = 200, msg = "Xóa Thành công" });
             }
-            if (tapphim != null &&  _upLoadFile.DeleteFile(tapphim.UrlImage) && _upLoadFile.DeleteFile(tapphim.UrlVideo))
-            {
-                if (TapPhimBLL.Delete(tapphim))
-                {
-                    return Json(new { code = 200, msg = "Xóa Thành công" });
-                }
-            }
-            return Json(new { code = 500, msg = "Xóa Thể Loại Thất Bại:" });
+            return Json(new { code = 500, msg = "Xóa Thất Bại:" });
         }
     }
 }

@@ -2,17 +2,14 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.CodeAnalysis;
 using Microsoft.IdentityModel.Tokens;
-using System.Buffers.Text;
-using System.Data;
-using System.Globalization;
-using System.Text.Json.Serialization;
-using System.Text.Json;
 using Wed_Movie.DAO;
-using Wed_Movie.Data.BLL;
 using Wed_Movie.DI;
 using Wed_Movie.Helpers;
-using Wed_Movie.Models;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using Wed_Movie.Entities;
+using MovieModel.Service;
+using MovieModel.Config;
+using Newtonsoft.Json;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace Wed_Movie.Areas.Admin.Controllers
 {
@@ -20,21 +17,28 @@ namespace Wed_Movie.Areas.Admin.Controllers
     [Authorize(Roles = "Admin")]
     public class DienVienController : Controller
     {
+        private readonly IWebHostEnvironment _hostingEnvironment;
         private readonly IUploadFile _upLoadFile;
-        public DienVienController(IUploadFile upLoadFile)
+        private readonly DienVienService _dienVienService;
+        private readonly TransactionService _transactionService;
+        public DienVienController(IWebHostEnvironment webHostEnvironment, IUploadFile upLoadFile, DienVienService dienVienService, TransactionService transactionService)
         {
+            _hostingEnvironment = webHostEnvironment;
             _upLoadFile = upLoadFile;
+            _dienVienService = dienVienService;
+            _transactionService = transactionService;
         }
 
         public IActionResult Index()
         {
-            var countries = CultureInfo.GetCultures(CultureTypes.SpecificCultures)
-            .Select(c => new RegionInfo(c.Name).DisplayName)
-            .Distinct()
-            .ToList()
-            .Order();
+            string filePath = Path.Combine(_hostingEnvironment.WebRootPath, "Json/countries.json");
 
-            ViewBag.Nationalities = countries;
+            using (StreamReader streamReader = new StreamReader(filePath))
+            {
+                string json = streamReader.ReadToEnd();
+                List<Countries> items = JsonConvert.DeserializeObject<List<Countries>>(json);
+                ViewBag.Nationalities = new SelectList(items, "code", "name");
+            }
             return View();
         }
 
@@ -45,7 +49,7 @@ namespace Wed_Movie.Areas.Admin.Controllers
         {
             try
             {
-                var dienvien = DienVienBLL.Item(id);
+                var dienvien = _dienVienService.GetAllDienVienId(id).FirstOrDefault();
                 string file ="";
                 if (dienvien != null || dienvien.Image.IsNullOrEmpty())
                 {
@@ -55,7 +59,7 @@ namespace Wed_Movie.Areas.Admin.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { code = 500, msg = "Lấy Thể Loại Thất Bại:" + ex.Message });
+                return Json(new { code = 500, msg = "Lấy Thất Bại:" + ex.Message });
             }
         }
         [HttpGet]
@@ -63,17 +67,28 @@ namespace Wed_Movie.Areas.Admin.Controllers
         {
             try
             {
-                return Json(new { code = 200, dsDienVien = DienVienBLL.List(search).ToList() });
+                var listDienVien = new List<DienVien>();
+                if (search.IsNullOrEmpty())
+                {
+                    listDienVien = _dienVienService.GetListDienViens().ToList();
+                }
+                else
+                {
+                    listDienVien = _dienVienService.SearchNameDienViens(search).ToList();
+                }
+                return Json(new { code = 200, dsDienVien = listDienVien });
             }
             catch (Exception ex)
             {
-                return Json(new { code = 500, msg = "Lấy Thể Loại Thất Bại:" + ex.Message });
+                return Json(new { code = 500, msg = "Lấy mới Thất Bại:" + ex.Message });
             }
         }
         [HttpPost]
         public async Task<JsonResult> AddDienVienAsync(DienVienDAO dienVienDAO)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid) return Json(new { code = 500, msg = "Thêm mới Thất Bại:" });
+
+            try
             {
                 var dienvien = new DienVien()
                 {
@@ -82,7 +97,7 @@ namespace Wed_Movie.Areas.Admin.Controllers
                     Birthday = dienVienDAO.Birthday,
                     Nationality = dienVienDAO.Nationality,
                     Sex = dienVienDAO.Sex,
-                    
+
                 };
                 if (dienVienDAO.Image == null)
                 {
@@ -98,66 +113,74 @@ namespace Wed_Movie.Areas.Admin.Controllers
                         dienvien.Image = upload.filePath;
                     }
                 }
-                if (DienVienBLL.Add(dienvien))
-                {
-                    return Json(new { code = 200, msg = "Thêm mới Thành công" });
-                }
+                _transactionService.ExecuteTransaction(() => _dienVienService.AddDienVien(dienvien));
+                return Json(new { code = 200, msg = "Thêm mới Thành công" });
             }
-            return Json(new { code = 500, msg = "Thêm Thể Loại Thất Bại:" });
+            catch (Exception ex)
+            {
+                return Json(new { code = 500, msg = "Thêm mới Thất Bại:" });
+            }
         }
         [HttpPost]
         public async Task<JsonResult> UpdateDienVienAsync(DienVienDAO dienVienDAO)
         {
-            var dienvien = new DienVien()
+            try
             {
-                Id = dienVienDAO.Id,
-                Name = dienVienDAO.Name,
-                Birthday = dienVienDAO.Birthday,
-                Nationality = dienVienDAO.Nationality,
-                Sex = dienVienDAO.Sex,
-
-            };
-            var temp = DienVienBLL.Item(dienVienDAO.Id);
-            if (dienVienDAO.Image != null && !dienVienDAO.Image.Equals(temp.Image))
-            {
-                var upload = await _upLoadFile.UploadsAsync(dienVienDAO.Image, false);
-                if (upload.IsSuccess)
+                var dienvien = new DienVien()
                 {
-                    dienvien.Image = upload.filePath;
+                    Id = dienVienDAO.Id,
+                    Name = dienVienDAO.Name,
+                    Birthday = dienVienDAO.Birthday,
+                    Nationality = dienVienDAO.Nationality,
+                    Sex = dienVienDAO.Sex,
+
+                };
+                var temp = _dienVienService.GetAllDienVienId(dienvien.Id).FirstOrDefault();
+                if (dienVienDAO.Image != null && !dienVienDAO.Image.Equals(temp.Image))
+                {
+                    var upload = await _upLoadFile.UploadsAsync(dienVienDAO.Image, false);
+                    if (upload.IsSuccess)
+                    {
+                        dienvien.Image = upload.filePath;
+                    }
+                    else
+                    {
+                        return Json(new { code = 500, msg = "Lưu Thể Loại Thất Bại:" });
+                    }
                 }
-            }
-            else
-            {
-                dienvien.Image = temp.Image;
-            }
-            if (DienVienBLL.Update(dienvien))
-            {
+                else
+                {
+                    dienvien.Image = temp.Image;
+                }
+                _transactionService.ExecuteTransaction(() => _dienVienService.UpdateDienVien(dienvien));
                 return Json(new { code = 200, msg = "Lưu Thành công" });
             }
-            return Json(new { code = 500, msg = "Lưu Thể Loại Thất Bại:" });
+            catch(Exception ex)
+            {
+                return Json(new { code = 500, msg = "Lưu Thể Loại Thất Bại:" });
+            }
         }
         [HttpPost]
         public JsonResult DeleteDienVien(string id)
         {
-            var dienvien =  DienVienBLL.Item(id);
-            if (dienvien.Image.Equals(LinkImage.Avatar_Nam) ==false && dienvien.Image.Equals(LinkImage.Avatar_Nu) ==false && dienvien.Image.Equals(LinkImage.Avatar_Khac) == false)
+            try
             {
-                if (_upLoadFile.DeleteFile(dienvien.Image))
+                var dienvien = _dienVienService.GetAllDienVienId(id).FirstOrDefault();
+                if (dienvien.Image.Equals(LinkImage.Avatar_Nam) == false && dienvien.Image.Equals(LinkImage.Avatar_Nu) == false && dienvien.Image.Equals(LinkImage.Avatar_Khac) == false)
                 {
-                    if (DienVienBLL.Delete(dienvien))
+                    if (!_upLoadFile.DeleteFile(dienvien.Image))
                     {
-                        return Json(new { code = 200, msg = "Xóa Thành công" });
+                        return Json(new { code = 500, msg = "Xóa Thể Loại Thất Bại:" });
                     }
                 }
+                _transactionService.ExecuteTransaction(() => _dienVienService.DeleteDienVien(id));
+                return Json(new { code = 200, msg = "Xóa Thành công" });
+
             }
-            else
+            catch(Exception ex)
             {
-                if (DienVienBLL.Delete(dienvien))
-                {
-                    return Json(new { code = 200, msg = "Xóa Thành công" });
-                }
+                return Json(new { code = 500, msg = "Xóa Thể Loại Thất Bại:" });
             }
-            return Json(new { code = 500, msg = "Xóa Thể Loại Thất Bại:" });
         }
     }
 }

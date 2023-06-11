@@ -22,7 +22,7 @@ namespace Wed_Movie.DAO
         public string? Phim { get; set; }
 
 
-        public List<string>? CT_DienVien { get; set; }
+        public List<string>? DienViens { get; set; }
         public List<TapPhim>? TapPhim { get; set; }
 
         public List<string>? CT_Hangs { get; set; }

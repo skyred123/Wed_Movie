@@ -1,14 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 using SixLabors.ImageSharp.Formats.Jpeg;
-using System.IO;
 using Wed_Movie.DI;
 using Wed_Movie.Result;
 using System.Diagnostics;
 using FFMpegCore;
 using System.Text.RegularExpressions;
-using System.Drawing;
-using NuGet.Packaging.Signing;
+
+
+
 
 namespace Wed_Movie.Functions
 {
@@ -29,7 +28,7 @@ namespace Wed_Movie.Functions
             //_appSettings = appSettings;
         }
         private readonly string _pathVideo = "Uploads\\Videos\\";
-        public async Task<UploadFileResult> UploadsAsync(IFormFile file,bool thumbnail) {
+        public async Task<UploadFileResult> UploadsAsync(IFormFile? file,bool thumbnail) {
             if (file != null && file.Length > 0)
             {
                 string uniqueFileName = Guid.NewGuid().ToString() + "_" + file.FileName;
@@ -212,7 +211,7 @@ namespace Wed_Movie.Functions
             // Xử lý không thành công
             return null;
         }
-        public bool DeleteFile(string filePath)
+        public bool DeleteFile(string? filePath)
         {
             if (string.IsNullOrEmpty(filePath)) { return false; }
             string wwwrootPath = _hostingEnvironment.WebRootPath;
@@ -236,6 +235,11 @@ namespace Wed_Movie.Functions
                 return false;
             }
             
+        }
+
+        public bool CheckFileExists(string? filePath)
+        {
+            return File.Exists(Path.Combine(_hostingEnvironment.WebRootPath, filePath));
         }
 
         public FileStream StreamMovie(string filePath)
@@ -267,7 +271,6 @@ namespace Wed_Movie.Functions
                 return "Unknown";
             }
         }
-
 
         #region private methods
 

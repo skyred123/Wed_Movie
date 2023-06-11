@@ -5,12 +5,13 @@
 
 
 <div class="col-sm-2">
-    <button id="add_Hang" type="button" class="my-3 p-2 btn btn-primary" data-bs-toggle="modal" data-bs-target="#modal_FormHang">Thêm Hãng Phim</button>
+    <button id="add_Hang" type="button" data-bs-toggle="modal" data-bs-target="#modal_FormHang" class="my-3 p-2 custom-btn block-animation-button"><span>Chọn!</span><span>Thêm Hãng Phim</span></button>
 </div>
-<table id="table" class="table table-striped table-bordered">
+
+<table id="table_hang" class="custom-table" cellspacing="0" cellpadding="0" style="width:100%; table-layout:auto">
     <thead>
         <tr>
-            <th>
+            <th class="text-center">
                 @Html.DisplayNameFor(model => model.Name)
             </th>
             <th></th>
@@ -40,8 +41,8 @@
                         <span asp-validation-for="Name" class="text-danger"></span>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary close" data-bs-dismiss="modal">Đóng</button>
-                        <button id="btnSubmit" type="submit" class=" btn btn-primary">Xác Nhận</button>
+                        <button type="button" class="custom-btn block-animation-button custom-gradient-dark" data-bs-dismiss="modal"><span>Chọn!</span><span>Đóng</span></button>
+                        <button id="btnSubmit" type="submit" class="custom-btn block-animation-button"><span>Chọn!</span><span>Xác Nhận</span></button>
                     </div>
                 </form>
             </div>
@@ -69,19 +70,34 @@
                 },
                 success: function (data) {
                     if (data.code == 200) {
-                        $("#table tbody").empty();
+                        if ($.fn.DataTable.isDataTable('#table_hang')) {
+                            $('#table_hang').DataTable().destroy();
+                        }
+                        $("#table_hang tbody").empty();
                         $.each(data.dsHang, function (k, v) {
-                            var str = '<tr class="" id="' + v.id + '">';
-                            str += "<td>" + v.name + "<td>";
-                            str += '<div class="btn-group" role="group">';
-                            str += '<button type="button" class="btn btn-warning" name="Update" data-bs-toggle="modal" data-bs-target="#modal_FormHang"><i class="fa fa-compress"></i></button>';
-                            str += '<button class="btn btn-xs btn-danger text-end" name="Delete"><i class="fa fa-trash" aria-hidden="true"></i></button>';
-                            str += '</div>';
+                            var str = '<tr class="text-center" id="' + v.id + '">';
+                            str += "<td>" + v.name + "</td>";
+                            str += '<td>';
+                            str += '<span>';
+                            str += '<button type="button" class="custom-btn block-animation-button custom-gradient-yellow" name="Update" data-bs-toggle="modal" data-bs-target="#modal_FormHang"><span>Chọn!</span><span>Cập Nhật</span></button>';
+                            str += '<button class="custom-btn block-animation-button custom-gradient-red" name="Delete"><span>Chọn!</span><span>Xóa</span></button>';
+                            str += '</span>';
                             str += "</td>";
                             str += "</tr>";
 
-                            $("#table tbody").append(str);
+                            $("#table_hang tbody").append(str);
                         });
+                        if (!$.fn.dataTable.isDataTable('#table_hang')) {
+                            // Nếu DataTable chưa được khởi tạo, thực hiện khởi tạo
+                            $("#table_hang").DataTable({
+                            searching: false,
+                            "columns": [
+                                null, // Cột 1 - vô hiệu hóa sắp xếp
+                                { "orderable": false }, // Các cột khác - mặc định cho sắp xếp
+                            ]
+                            });
+                        }
+                        
                     }
                     else if (data.code == 500) {
                         alert(data.msg);

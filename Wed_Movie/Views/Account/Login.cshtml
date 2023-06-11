@@ -4,36 +4,90 @@
     ViewData["Title"] = "Login";
 }
 
-<h1>Login</h1>
-
-<h4>LoginDAO</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-controller="Account" asp-action="Login" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="email" class="control-label"></label>
-                <input asp-for="email" class="form-control" />
-                <span asp-validation-for="email" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="password" class="control-label"></label>
-                <input asp-for="password" class="form-control" />
-                <span asp-validation-for="password" class="text-danger"></span>
-            </div>
-            <div class=" form-group">
-                <label asp-for="remeberMe" class="form-label">
-                    <input class="form-check-input" asp-for="remeberMe" />
-                    @Html.DisplayNameFor(m => m.remeberMe)
-                    </label>
-                </div>
-            <div class="form-group p-3">
-                <input type="submit" value="Create" class="btn btn-primary" />
-            </div>
-        </form>
+<form id="form_login">
+    <div  id="loginErrorMessage" class="text-danger text-center h5 d-none"></div>
+    <div class="form-group mb-4">
+        <label asp-for="email" class="control-label"></label>
+        <input asp-for="email" class="form-control" autocomplete="on"/>
+        <span asp-validation-for="email" class="text-danger"></span>
     </div>
+    <div class="form-group mb-4">
+        <label asp-for="password" class="control-label"></label>
+        <div>
+            <div class="input-group">
+                <input asp-for="password" id="password" name="password" class="form-control" autocomplete="on" />
+                <div class="input-group-append">
+                    <button type="button" id="showPasswordButton" class="btn btn-primary" style="width: 70px;">Hiện</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class=" form-group mb-4">
+        <label asp-for="remeberMe" class="form-label">
+            <input class="form-check-input" asp-for="remeberMe" />
+            @Html.DisplayNameFor(m => m.remeberMe)
+        </label>
+    </div>
+    <div class="form-group">
+        <input type="submit" value="Create" class="btn btn-primary btn-block mb-4 w-100" />
+    </div>
+    
+</form>
+<div class="text-center mb-3">
+    <button type="button" class="btn btn-link btn-floating mx-1">
+        <i class="fab fa-facebook-f"></i>
+    </button>
+
+    <a type="button" href="~/Account/ExternalLogin/?provider=@("Google")&&returnUrl=@Context.Request.GetDisplayUrl()" class="btn btn-link btn-floating mx-1">
+        <i class="fab fa-google"></i>
+    </a>
+
+    <button type="button" class="btn btn-link btn-floating mx-1">
+        <i class="fab fa-twitter"></i>
+    </button>
+
+    <button type="button" class="btn btn-link btn-floating mx-1">
+        <i class="fab fa-github"></i>
+    </button>
 </div>
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+<script>
+    
+
+    document.getElementById("form_login").addEventListener("submit", function (e) {
+        e.preventDefault();
+        var formData = new FormData($(this)[0]);
+        
+        $.ajax({
+            url: '/Account/Login',
+            type: 'post',
+            data: formData,
+            dataType: "json",
+            contentType: false,
+            processData: false,
+            success: function (data) {
+                if (data.code == 200) {
+                    location.href = data.redirect;
+                }
+                else if(data.code == 500){
+                    
+                    $('#loginErrorMessage').html(data.msg);
+                    document.getElementById('loginErrorMessage').classList.remove('d-none');
+                }
+            }
+        });
+    });
+    document.getElementById('showPasswordButton').addEventListener('click', function() {
+        var passwordInput = document.getElementById('password');
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            this.textContent = 'Ẩn';
+        } else {
+            passwordInput.type = 'password';
+            this.textContent = 'Hiện';
+        }
+    });
+</script>
+@{
+    await Html.RenderPartialAsync("_ValidationScriptsPartial");
 }

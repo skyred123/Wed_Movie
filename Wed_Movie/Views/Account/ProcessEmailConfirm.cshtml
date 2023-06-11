@@ -1,0 +1,45 @@
+﻿@model Wed_Movie.DAO.ProcessEmailConfirmDAO
+
+<form id="form_processemailconfirm">
+    <div class="form-floating mb-3">
+        <input asp-for="email" class="form-control" autocomplete="email" placeholder="Vui lòng nhập email." required/>
+        <label asp-for="email" class="form-label">Email</label>
+        <span id="processemailconfirmErrorMessage" class="text-danger"></span>
+    </div>
+    <button type="submit" class="w-100 btn btn-lg btn-primary">Đăng Ký</button>
+</form>
+<script>
+    document.getElementById("form_processemailconfirm").addEventListener("submit", function (e) {
+        e.preventDefault();
+        var formData = new FormData($(this)[0]);
+
+        $.ajax({
+            url: '/Account/ProcessEmail',
+            type: 'post',
+            data: formData,
+            dataType: "json",
+            contentType: false,
+            processData: false,
+            success: function (data) {
+                if (data.code == 200) {
+                    var msg = data.msg+ " " + '<a href="https://mail.google.com" style="text-decoration: none; color: #000000;">Đến Trang email Google</a>';
+                    $('#registeErrorMessage').html(msg);
+                    document.getElementById('registeErrorMessage').classList.remove('d-none');
+                }
+                else if (data.code == 300){
+                    location.href = data.redirect;
+                }
+                else if (data.code == 500) {
+                    $('#loginErrorMessage').html(data.msg);
+                    document.getElementById('loginErrorMessage').classList.remove('d-none');
+                }
+                setTimeout(() => {
+                    $('#accountModal').modal('toggle');
+                }, 10000);
+            }
+        });
+    });
+</script>
+@{
+    await Html.RenderPartialAsync("_ValidationScriptsPartial");
+}

@@ -21,7 +21,7 @@
 
 <div class="">
     <div style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%;">
-        <video id="modal-video" src="" type="video/mp4" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" loop controls>
+        <video id="modal-video" src="" type="video/mp4" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" loop>
         </video>
         <div class="">
             <progress id="video-progress" value="0" max="100" class="position-absolute bottom-0 w-100" style="right: 0; z-index:1"></progress>
@@ -38,9 +38,12 @@
                     <label class="fw-bold">Phim:</label>
                     <a id="name_TapPhim"></a>
                 </div>
-                <div class="border-5">
+                <div class="border-5 my-2">
                     <div class="fw-bold d-flex">Mô tả:</div>
-                    <div id="description_TapPhim" class="position-relative overflow-auto border" contenteditable="false" style="max-width:100%;max-height:200px;"></div>
+                    <div class="position-relative overflow-auto border border-1" contenteditable="false" style="max-width:100%;max-height:200px;">
+                        <div id="description_TapPhim" class="p-2 position-relative overflow-auto border border-1" contenteditable="false" style="max-width:100%;max-height:200px;">
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="col-md-5">
@@ -65,7 +68,7 @@
         </div>
         <hr />
         <div class="d-flex justify-content-between">
-            <button onclick="getModal('modal_FormTapPhim')" class="btn btn-primary">Thêm Tập Phim</button>
+            <button type="button" class="custom-btn block-animation-button" onclick="getModal('modal_FormTapPhim')"><span>Chọn!</span><span>Thêm Tập Phim</span></button>
             <button>Checck </button>
         </div>
         <hr />
@@ -129,7 +132,10 @@
                     </div>
                     <div class="form-group my-2">
                         <label asp-for="UrlVideo" class="">Video:</label>
-                        <input asp-for="UrlVideo" type="file" class="form-control-file" accept="video/*" />
+                        <input asp-for="UrlVideo" type="file" class="form-control-file" accept="video/*" onchange="handleFileSelect(event,'video-tapphim-container','video-tapphim-preview')" />
+                        <div id="video-tapphim-container" class="position-relative overflow-auto border d-none" contenteditable="false">
+                            <video id="video-tapphim-preview" src="" style="max-width:100%; max-height:100%;" controls></video>
+                        </div>
                         <progress id="upload-progress1" value="0" max="100" style="width: 100%; height: 20px;"></progress>
                     </div>
                     <div class="modal-footer">
@@ -163,18 +169,40 @@
             },
             success: function (data) {
                 if (data.code == 200) {
+                    $("#list_TapPhim").empty();
                      $.each(data.listTapPhim, function (k, v) {
                         var str =   "<tr >";
                         str += '<td class="text-center my-auto" style = "vertical-align: middle;" > '+ v.count+' </td>';
                         str += ' <td class="text-center my-auto" style="vertical-align: middle;"><img src="' + window.location.origin + '/' + v.urlImage + '" /></td>';
                         str += '<td class="text-center my-auto " style="vertical-align: middle;">'+v.name+'</td>';
                         str += '<td class="text-center my-auto" style="vertical-align: middle;">';
-                        str += '<button><i class="fa fa-sync"></i></button>';
-                        str += '<button type="button" onclick="DeleteTapPhim(\'' + v.id + '\')"><i class="fa fa-trash" aria-hidden="true"></button>';
+                        str += '<button type="button" class="custom-btn block-animation-button" onclick="DeleteTapPhim(\'' + v.id + '\')"><span>Chọn!</span><span>Xóa</span></button>';
                         str += '</td>';
                         str += '</tr>';
                         $("#list_TapPhim").append(str);
                      });
+
+                }
+                else if (data.code == 500) {
+                    alert(data.msg);
+
+                }
+            }
+        });
+    }
+
+    function UpdateTapPhim(id){
+        $.ajax({
+            url: '/Admin/TapPhim/UpdateTapPhim',
+            type: 'put',
+            data: {
+                id: id,
+            },
+            success: function (data) {
+                if (data.code == 200) {
+                    getModal('modal_FormTapPhim');
+                    alert(data.msg);
+                    
                 }
                 else if (data.code == 500) {
                     alert(data.msg);
@@ -194,7 +222,7 @@
             success: function (data) {
                 if (data.code == 200) {
                     alert(data.msg);
-                    setdataTapPhim();
+                    setListTapPhim();
                 }
                 else if (data.code == 500) {
                     alert(data.msg);
@@ -252,12 +280,13 @@
                 contentType: false,
                 success: function (data) {
                     if (data.code == 200) {
+                        setListTapPhim();
                         alert(data.msg);
                     }
                     else if (data.code == 500) {
                         alert(data.msg);
                     }
-                    setdataTapPhim();
+                    
                 },
                 xhr: function () {
                     var xhr = new window.XMLHttpRequest();
@@ -319,6 +348,11 @@
                     const videoBlob = request.response;
                     const videoURL = URL.createObjectURL(videoBlob);
                     video.src = videoURL;
+
+                    video.muted = true;
+
+                    $("#btn_Muted").html('<i class="fas fa-volume-mute"></i>');
+
                     video.addEventListener('loadedmetadata', function () {
                         video.play();
                     });
@@ -376,14 +410,15 @@
     function off_onMuted() {
         var videoElement = $("#modal-video");
         var btnMuted = $("#btn_Muted");
-        if (videoElement.prop('muted')) {
-            // Nếu âm đã tắt, bật âm
-            videoElement.prop('muted', false);
-            btnMuted.html('<i class="fas fa-volume-up"></i>');
-        } else {
+        if (!videoElement.prop('muted')) {
             // Nếu âm đã bật, tắt âm
             videoElement.prop('muted', true);
             btnMuted.html('<i class="fas fa-volume-mute"></i>');
+        } else {
+            
+            // Nếu âm đã tắt, bật âm
+            videoElement.prop('muted', false);
+            btnMuted.html('<i class="fas fa-volume-up"></i>');
         }
     }
 

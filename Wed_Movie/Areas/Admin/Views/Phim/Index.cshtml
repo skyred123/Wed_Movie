@@ -4,18 +4,18 @@
     Layout = "~/Areas/Admin/Views/Shared/_LayoutAdmin.cshtml";
 }
 <div class="col-sm-2">
-    <button id="btn_Add" type="button" class="my-3 p-2 btn btn-primary" data-bs-toggle="modal" data-bs-target="#modal_Form">Thêm Thể Loại</button>
+    <button id="btn_Add" type="button" class="my-3 p-2 custom-btn block-animation-button" data-bs-toggle="modal" data-bs-target="#modal_Form"><span>Chọn!</span><span>Thêm Thể Loại</span></button>
 </div>
-<table class="table ">
+<table id="table_phim" class="custom-table" cellspacing="0" cellpadding="0" style="width:100%; table-layout:auto">
     <thead>
-        <tr>
-            <th>
+        <tr >
+            <th class="text-center">
                 @Html.DisplayNameFor(model => model.Name)
             </th>
             <th></th>
         </tr>
     </thead>
-    <tbody class="List_Form">
+    <tbody class="">
     </tbody>
 </table>
 
@@ -37,8 +37,8 @@
                         <span asp-validation-for="Name" class="text-danger"></span>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary close" data-bs-dismiss="modal">Đóng</button>
-                        <button id="btnSubmit" type="submit" class=" btn btn-primary">Xác Nhận</button>
+                        <button type="button" class="custom-btn block-animation-button custom-gradient-dark" data-bs-dismiss="modal"><span style="background: linear-gradient(0deg, #6c757d 0%, #e9ecef 100%);">Chọn!</span><span style="background: linear-gradient(0deg, #6c757d 0%, #e9ecef 100%);">Đóng</span></button>
+                        <button id="btnSubmit" type="submit" class="custom-btn block-animation-button"><span>Chọn!</span><span>Xác Nhận</span></button>
                     </div>
                 </form>
             </div>
@@ -64,18 +64,34 @@
                 },
                 success: function (data) {
                     if (data.code == 200) {
-                        $(".List_Form").empty();
+                        if ($.fn.DataTable.isDataTable('#table_phim')) {
+                            $('#table_phim').DataTable().destroy();
+                        }
+                        $("#table_phim tbody").empty();
                         $.each(data.dsDienVien, function (k, v) {
-                            var str = '<tr class="" id="' + v.id + '">';
-                            str += "<td>" + v.name + "<td>";
-                            str += '<td class="">';
-                            str += '<button type="button" class="btn btn-warning" name="Update" data-bs-toggle="modal" data-bs-target="#modal_Form"><i class="fa fa-compress"></i></button>&nbsp';
-                            str += '<button class="btn btn-xs btn-danger text-end" name="Delete"><i class="fa fa-trash" aria-hidden="true"></i></button>';
+                            var str = '<tr class="text-center" id="' + v.id + '">';
+                            str += "<td>" + v.name + "</td>";
+                            str += '<td >';
+                            str += '<span>';
+                            str += '<button type="button" class="custom-btn block-animation-button custom-gradient-yellow" name="Update" data-bs-toggle="modal" data-bs-target="#modal_Form"><span>Chọn!</span><span>Cập Nhật</span></button>&nbsp';
+                            str += '<button class="custom-btn block-animation-button custom-gradient-red" name="Delete"><span>Chọn!</span><span>Xóa</span></button>';
+                            str += '</span>';
                             str += "</td>";
                             str += "</tr>";
 
-                            $(".List_Form").append(str);
+                            $("#table_phim tbody").append(str);
                         });
+                        if (!$.fn.dataTable.isDataTable('#table_phim')) {
+                            // Nếu DataTable chưa được khởi tạo, thực hiện khởi tạo
+                            $('#table_phim').DataTable({
+                                searching: false,
+                                "columns": [
+                                    null, // Cột 1 - vô hiệu hóa sắp xếp
+                                    { "orderable": false }, // Các cột khác - mặc định cho sắp xếp
+                                ],
+                            });
+                        }
+                        
                     }
                     else if (data.code == 500) {
                         alert(data.msg);

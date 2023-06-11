@@ -1,14 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Newtonsoft.Json;
-using NuGet.Configuration;
+using MovieModel.Config;
+using MovieModel.Service;
 using Wed_Movie.DAO;
-using Wed_Movie.Data;
-using Wed_Movie.Data.BLL;
 using Wed_Movie.DI;
-using Wed_Movie.Helpers;
-using Wed_Movie.Migrations;
-using Wed_Movie.Models;
+using Wed_Movie.Entities;
 
 namespace Wed_Movie.Areas.Admin.Controllers
 {
@@ -16,23 +12,28 @@ namespace Wed_Movie.Areas.Admin.Controllers
     public class PhanPhimController : Controller
     {
         private readonly IUploadFile _upLoadFile;
-        public PhanPhimController(IUploadFile upLoadFile)
+
+        private readonly PhanPhimService _phanPhimService;
+        private readonly TransactionService _transactionService;
+        public PhanPhimController(IUploadFile upLoadFile, PhanPhimService phanPhimService, TransactionService transactionService)
         {
             _upLoadFile = upLoadFile;
+            _phanPhimService = phanPhimService;
+            _transactionService = transactionService;
         }
         public IActionResult Index()
         {
-            ViewBag.CT_DienVien = new SelectList(DienVienBLL.List(""), "Id", "Name");
-            ViewBag.CT_Hangs =  new SelectList(HangBLL.List(""), "Id", "Name");
-            ViewBag.CT_TheLoais = new SelectList(TheLoaiBLL.List(""), "Id", "Name");
-            ViewBag.Phim = new SelectList(PhimBLL.List(""),"Id","Name");
+            ViewBag.CT_DienVien = new SelectList(_phanPhimService.GetAllDienViens().ToList(), "Id", "Name");
+            ViewBag.CT_Hangs =  new SelectList(_phanPhimService.GetListHang().ToList(), "Id", "Name");
+            ViewBag.CT_TheLoais = new SelectList(_phanPhimService.GetListTheLoai().ToList(), "Id", "Name");
+            ViewBag.Phim = new SelectList(_phanPhimService.GetListPhim().ToList(), "Id","Name");
             return View();
         }
         public JsonResult GetPhanPhim(string id)
         {
             try
             {
-                return Json(new { code = 200, item = PhanPhimBLL.Item(id) });
+                return Json(new { code = 200, item = _phanPhimService.GetAllPhanPhimId(id).FirstOrDefault() });
             }
             catch (Exception ex)
             {
@@ -44,7 +45,8 @@ namespace Wed_Movie.Areas.Admin.Controllers
         {
             try
             {
-                return Json(new { code = 200, listPhanPhim = PhanPhimBLL.List("").OrderByDescending(e=> DateTime.Parse(e.TimeUpdate)).ToList() });
+                var check = _phanPhimService.GetListPhanPhims().ToList();
+                return Json(new { code = 200, listPhanPhim = _phanPhimService.GetListPhanPhims().ToList() });
             }
             catch (Exception ex)
             {
@@ -58,11 +60,8 @@ namespace Wed_Movie.Areas.Admin.Controllers
         {
             if (ModelState.IsValid)
             {
-                if (phanPhimDAO == null)
+                PhanPhim phanPhim = new PhanPhim()
                 {
-                    return Json(new { code = 500, msg = " Thất Bại:" });
-                }
-                PhanPhim phanPhim = new PhanPhim() {
                     Id = Guid.NewGuid().ToString(),
                     Name = phanPhimDAO.Name,
                     Description = phanPhimDAO.Description,
@@ -70,47 +69,60 @@ namespace Wed_Movie.Areas.Admin.Controllers
                     PhimId = phanPhimDAO.Phim,
                     TimeUpdate = DateTime.Now.Date.ToString("yyyy-MM-dd"),
                 };
-                if(phanPhimDAO.CT_DienVien != null)
+                try
                 {
-                    phanPhim.CT_DienVien = CT_DienVienBLL.ListCT_DienVien(phanPhimDAO.CT_DienVien, phanPhim.Id);
-                }
-                if (phanPhimDAO.CT_Hangs != null )
-                {
-                    phanPhim.CT_Hangs = CT_HangBLL.ListCT_Hang(phanPhimDAO.CT_Hangs, phanPhim.Id);
-                }
-                if (phanPhimDAO.CT_TheLoais != null  )
-                {
-                    phanPhim.CT_TheLoais = CT_TheLoaiBLL.ListCT_TheLoai(phanPhimDAO.CT_TheLoais, phanPhim.Id);
-                }
-                var upload = await _upLoadFile.UploadsAsync(phanPhimDAO.Image, false);
-                if (upload.IsSuccess)
-                {
-                    phanPhim.Image = upload.filePath;
-                }
-                upload = await _upLoadFile.UploadsAsync(phanPhimDAO.Trailer, false);
-                if (upload.IsSuccess)
-                {
-                    phanPhim.Trailer = upload.filePath;
-                }
-                if (PhanPhimBLL.Add(phanPhim))
-                {
+                    if (phanPhimDAO == null)
+                    {
+                        return Json(new { code = 500, msg = " Thất Bại:" });
+                    }
+
+                    if (phanPhimDAO.DienViens != null) phanPhim.CT_DienVien = _phanPhimService.AddDienVienPhanPhim(phanPhimDAO.DienViens,phanPhimDAO.Id).ToList();
+
+                    if (phanPhimDAO.CT_Hangs != null) phanPhim.CT_Hangs = _phanPhimService.AddHangPhanPhim(phanPhimDAO.CT_Hangs,phanPhimDAO.Id).ToList();
+
+                    if (phanPhimDAO.CT_TheLoais != null) phanPhim.CT_TheLoais = _phanPhimService.AddTheLoaiPhanPhim(phanPhimDAO.CT_TheLoais,phanPhimDAO.Id).ToList();
+
+                    var upload = await _upLoadFile.UploadsAsync(phanPhimDAO.Image, false);
+                    if (upload.IsSuccess) phanPhim.Image = upload.filePath;
+                    else return Json(new { code = 500, msg = "Thêm mới Thất Bại:" });
+
+                    upload = await _upLoadFile.UploadsAsync(phanPhimDAO.Trailer, false);
+                    if (upload.IsSuccess) phanPhim.Trailer = upload.filePath;
+                    else return Json(new { code = 500, msg = "Thêm mới Thất Bại:" });
+
+                    _transactionService.ExecuteTransaction(() => _phanPhimService.AddPhanPhim(phanPhim));
                     return Json(new { code = 200, msg = "Thêm mới Thành công" });
                 }
-                return Json(new { code = 500, msg = "Thêm mới Thất Bại:" });
+                catch (Exception ex)
+                {
+                    if (_upLoadFile.CheckFileExists(phanPhim.Image))
+                    {
+                        _upLoadFile.DeleteFile(phanPhim.Image);
+                    }
+                    if (_upLoadFile.CheckFileExists(phanPhim.Trailer))
+                    {
+                        _upLoadFile.DeleteFile(phanPhim.Trailer);
+                    }
+                    return Json(new { code = 500, msg = "Thêm mới Thất Bại:" });
+                }
             }
-            return Json(new { code = 500, msg = "Thêm mới Thất Bại:" });
+            return Json(new { code = 500, msg = "Thêm mới Thất Bại:"  });
         }
         [HttpPut]
         public async Task<JsonResult> UpdatePhanPhim(PhanPhimDAO phanPhimDAO)
         {
             if (ModelState.IsValid)
             {
+                return Json(new { code = 500, msg = "Cập nhật Thất Bại: "});
+            }
+            try
+            {
                 if (phanPhimDAO == null)
                 {
                     return Json(new { code = 500, msg = "Thất Bại:" });
                 }
 
-                var temp = PhanPhimBLL.Item(phanPhimDAO.Id);
+                var temp = _phanPhimService.GetAllPhanPhimId(phanPhimDAO.Id).FirstOrDefault();
 
                 PhanPhim phanPhim = new PhanPhim()
                 {
@@ -122,17 +134,16 @@ namespace Wed_Movie.Areas.Admin.Controllers
                     TimeUpdate = DateTime.Now.Date.ToString("yyyy-MM-dd"),
                 };
 
-                phanPhim.CT_DienVien = phanPhimDAO.CT_DienVien != null ?
-                    CT_DienVienBLL.ListCT_DienVien(phanPhimDAO.CT_DienVien, phanPhim.Id) :
+                phanPhim.CT_DienVien = phanPhimDAO.DienViens != null ?
+                    _phanPhimService.AddDienVienPhanPhim(phanPhimDAO.DienViens, phanPhimDAO.Id).ToList() :
                     temp.CT_DienVien;
 
                 phanPhim.CT_Hangs = phanPhimDAO.CT_Hangs != null ?
-                    CT_HangBLL.ListCT_Hang(phanPhimDAO.CT_Hangs, phanPhim.Id) :
+                   _phanPhimService.AddHangPhanPhim(phanPhimDAO.CT_Hangs, phanPhimDAO.Id).ToList() :
                     temp.CT_Hangs;
 
                 phanPhim.CT_TheLoais = phanPhimDAO.CT_TheLoais != null ?
-                    CT_TheLoaiBLL.ListCT_TheLoai(phanPhimDAO.CT_TheLoais, phanPhim.Id) :
-                    temp.CT_TheLoais;
+                    phanPhim.CT_TheLoais = _phanPhimService.AddTheLoaiPhanPhim(phanPhimDAO.CT_TheLoais, phanPhimDAO.Id).ToList() : temp.CT_TheLoais;
 
                 if (phanPhimDAO.Image != null && _upLoadFile.DeleteFile(temp.Image))
                 {
@@ -160,28 +171,26 @@ namespace Wed_Movie.Areas.Admin.Controllers
                     phanPhim.Trailer = temp.Trailer;
                 }
 
-                if (PhanPhimBLL.Update(phanPhim))
-                {
-                    return Json(new { code = 200, msg = "Thêm mới Thành công" });
-                }
-
-                return Json(new { code = 500, msg = "Thêm mới Thất Bại:" });
+                _transactionService.ExecuteTransaction(() => _phanPhimService.UpdatePhanPhim(phanPhim));
+                return Json(new { code = 200, msg = "Thêm mới Thành công" });
             }
-
-            return Json(new { code = 500, msg = "Thêm mới Thất Bại:" });
+            catch(Exception ex)
+            {
+                return Json(new { code = 500, msg = "Cập nhật Thất Bại Thất Bại: " + ex.Message });
+            }
         }
         [HttpDelete]
         public JsonResult DeletePhanPhim(string id)
         {
-            var dienvien = PhanPhimBLL.Item(id);
-            if (dienvien != null && _upLoadFile.DeleteFile(dienvien.Image) && _upLoadFile.DeleteFile(dienvien.Trailer))
+            var phanphim = _phanPhimService.GetAllPhanPhimId(id).FirstOrDefault();
+            if (phanphim != null && _upLoadFile.CheckFileExists(phanphim.Image) && _upLoadFile.CheckFileExists(phanphim.Trailer))
             {
-                if ( PhanPhimBLL.Delete(dienvien))
-                {
-                    return Json(new { code = 200, msg = "Xóa Thành công" });
-                }
+                _upLoadFile.DeleteFile(phanphim.Image);
+                _upLoadFile.DeleteFile(phanphim.Trailer);
+                _transactionService.ExecuteTransaction(() => _phanPhimService.DeletePhanPhim(id));
+                return Json(new { code = 200, msg = "Xóa Thành công" });
             }
-            
+
             return Json(new { code = 500, msg = "Xóa Thể Loại Thất Bại:" });
         }
     }

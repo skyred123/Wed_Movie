@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Data;
-using Wed_Movie.Data.BLL;
-using Wed_Movie.Helpers;
-using Wed_Movie.Models;
+using Microsoft.IdentityModel.Tokens;
+using MovieModel.Config;
+using MovieModel.Service;
+using Wed_Movie.Entities;
 
 namespace Wed_Movie.Areas.Admin.Controllers
 {
@@ -11,6 +11,15 @@ namespace Wed_Movie.Areas.Admin.Controllers
     [Authorize(Roles = "Admin")]
     public class HangController : Controller
     {
+        private readonly HangService _hangService;
+        private readonly TransactionService _transactionService;
+
+        public HangController(HangService hangService, TransactionService transactionService)
+        {
+            _hangService = hangService;
+            _transactionService = transactionService;
+        }
+
         public IActionResult Index()
         {
             return View();
@@ -21,11 +30,11 @@ namespace Wed_Movie.Areas.Admin.Controllers
         {
             try
             {
-                return Json(new { code = 200, hang = HangBLL.Item(id) });
+                return Json(new { code = 200, hang = _hangService.GetHangId(id).FirstOrDefault() });
             }
             catch (Exception ex)
             {
-                return Json(new { code = 500, msg = "Lấy Thể Loại Thất Bại:" + ex.Message });
+                return Json(new { code = 500, msg = "Lấy Thất Bại: " + ex.Message });
             }
         }
         [HttpPost]
@@ -33,52 +42,78 @@ namespace Wed_Movie.Areas.Admin.Controllers
         {
             try
             {
-                return Json(new { code = 200, dsHang = HangBLL.List(search) });
+                var listHang = new List<Hang>();
+                if (search.IsNullOrEmpty())
+                {
+                    listHang = _hangService.GetListHangs().ToList();
+                }
+                else
+                {
+                    listHang = _hangService.SearchNameHangs(search).ToList();
+                }
+                return Json(new { code = 200, dsHang = listHang });
             }
             catch (Exception ex)
             {
-                return Json(new { code = 500, msg = "Lấy Thể Loại Thất Bại:" + ex.Message });
+                return Json(new { code = 500, msg = "Lấy Thất Bại:" + ex.Message });
             }
         }
         [HttpPost]
         public JsonResult AddHang(string name)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
+            {
+                return Json(new { code = 500, msg = "Thêm mới Thất Bại:" });
+            }
+
+            try
             {
                 var hang = new Hang()
                 {
                     Id = Guid.NewGuid().ToString(),
                     Name = name,
                 };
-                if (HangBLL.Add(hang))
-                {
-                    return Json(new { code = 200, msg = "Thêm mới Thành công" });
-                }
+                _transactionService.ExecuteTransaction(() => _hangService.AddHang(hang));
+                return Json(new { code = 200, msg = "Thêm mới Thành công" });
             }
-            return Json(new { code = 500, msg = "Thêm Thể Loại Thất Bại:" });
+            catch(Exception ex)
+            {
+                return Json(new { code = 500, msg = "Thêm mới Thất Bại:" });
+            }
+            
         }
         [HttpPost]
         public JsonResult UpdateHang(string id, string name)
         {
-            var hang = new Hang()
+            try
             {
-                Id = id,
-                Name = name,
-            };
-            if (HangBLL.Update(hang))
-            {
-                return Json(new { code = 200, msg = "Lưu Thành công" });
+                var hang = new Hang()
+                {
+                    Id = id,
+                    Name = name,
+                };
+                _transactionService.ExecuteTransaction(() => _hangService.UpdateHang(hang));
+                return Json(new { code = 200, msg = "Cập nhật Thành công" });
+
             }
-            return Json(new { code = 500, msg = "Lưu Thể Loại Thất Bại:" });
+            catch(Exception ex)
+            {
+                return Json(new { code = 500, msg = "Lưu Thất Bại:" });
+            }
         }
         [HttpPost]
         public JsonResult DeleteHang(string id)
         {
-            if (HangBLL.Delete(id))
+            try 
             {
+                _transactionService.ExecuteTransaction(() => _hangService.DeleteHang(id));
                 return Json(new { code = 200, msg = "Xóa Thành công" });
+
             }
-            return Json(new { code = 500, msg = "Xóa Thể Loại Thất Bại:" });
+            catch(Exception ex)
+            {
+                return Json(new { code = 500, msg = "Xóa Thất Bại:" });
+            }
         }
     }
 }

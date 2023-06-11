@@ -1,49 +1,61 @@
 ﻿@model Wed_Movie.DAO.RegisterDAO
 
-@{
-    ViewData["Title"] = "Register";
-    Layout = "~/Views/Shared/_Layout.cshtml";
-}
-
-<h1>Register</h1>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-controller="Account" asp-action="Register" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <@*div class="form-group">
-                <label asp-for="name" class="control-label"></label>
-                <input asp-for="name" class="form-control" />
-                <span asp-validation-for="name" class="text-danger"></span>
-            </div>*@
-            <div class="form-group">
-                <label asp-for="email" class="control-label"></label>
-                <input asp-for="email" class="form-control" />
-                <span asp-validation-for="email" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="password" class="control-label"></label>
-                <input asp-for="password" class="form-control" />
-                <span asp-validation-for="password" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="confirmPassword" class="control-label"></label>
-                <input asp-for="confirmPassword" class="form-control" />
-                <span asp-validation-for="confirmPassword" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="phonenumber" class="control-label"></label>
-                <input asp-for="phonenumber" class="form-control" />
-                <span asp-validation-for="phonenumber" class="text-danger"></span>
-            </div>
-            <input type="hidden" asp-for="returnUrl"/>
-            <div class="form-group p-3">
-                <input type="submit" value="Create" class="btn btn-primary" />
-            </div>
-        </form>
+<form id="form_register">
+    <div id="registeErrorMessage" class="text-danger text-center h5 d-none">a</div>
+    <div class="form-group">
+        <label asp-for="email" class="control-label"></label>
+        <input asp-for="email" class="form-control" autocomplete="on" />
+        <span asp-validation-for="email" class="text-danger"></span>
     </div>
-</div>
+    <div class="form-group">
+        <label asp-for="password" class="control-label"></label>
+        <input asp-for="password" class="form-control" autocomplete="on" />
+        <span asp-validation-for="password" class="text-danger"></span>
+    </div>
 
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <div class="form-group">
+        <label asp-for="confirmPassword" class="control-label"></label>
+        <input asp-for="confirmPassword" class="form-control" autocomplete="on" />
+        <span asp-validation-for="confirmPassword" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="phonenumber" class="control-label"></label>
+        <input asp-for="phonenumber" class="form-control" autocomplete="on" />
+        <span asp-validation-for="phonenumber" class="text-danger"></span>
+    </div>
+    <input type="hidden" asp-for="returnUrl" />
+    <div class="form-group my-3">
+        <input type="submit" value="Create" class="btn btn-primary btn-block mb-4 w-100" />
+    </div>
+</form>
+
+<script>
+    document.getElementById("form_register").addEventListener("submit", function (e) {
+        e.preventDefault();
+        var formData = new FormData($(this)[0]);
+
+        $.ajax({
+            url: '/Account/Register',
+            type: 'post',
+            data: formData,
+            dataType: "json",
+            contentType: false,
+            processData: false,
+            success: function (data) {
+                if (data.code == 200) {
+                    var msg = data.msg+ " " + '<a href="https://mail.google.com" style="text-decoration: none; color: #000000;">Đến Trang email Google</a>';
+                    $('#registeErrorMessage').html(msg);
+                    document.getElementById('registeErrorMessage').classList.remove('d-none');
+                }
+                else if (data.code == 500) {
+
+                    $('#registeErrorMessage').html(data.msg);
+                    document.getElementById('registeErrorMessage').classList.remove('d-none');
+                }
+            }
+        });
+    });
+</script>
+@{
+    await Html.RenderPartialAsync("_ValidationScriptsPartial");
 }

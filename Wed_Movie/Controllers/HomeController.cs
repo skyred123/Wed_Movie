@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using Wed_Movie.DAO;
-using Wed_Movie.Data;
 using Wed_Movie.Models;
 
 
